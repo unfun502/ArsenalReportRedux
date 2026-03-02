@@ -1,0 +1,13 @@
+{
+  "name": "arsenalreportredux",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Arsenal FC squad report for 2025-26 season — Cloudflare Workers static site",
+  "scripts": {
+    "dev": "npx wrangler dev",
+    "deploy": "npx wrangler deploy"
+  },
+  "dependencies": {
+    "@cloudflare/kv-asset-handler": "^0.3.4"
+  }
+}
