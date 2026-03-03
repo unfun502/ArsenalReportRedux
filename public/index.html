@@ -2034,6 +2034,8 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     if (d3Loaded) { cb(); return; }
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
+    s.integrity = 'sha384-su5kReKyYlIFrI62mbQRKXHzFobMa7BHp1cK6julLPbnYcCW9NIZKJiTODjLPeDh';
+    s.crossOrigin = 'anonymous';
     s.onload = () => { d3Loaded = true; cb(); };
     document.head.appendChild(s);
   }
@@ -2236,11 +2238,15 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
       : Object.entries(POS_COLORS);
     legendEntries.forEach(([label, color]) => {
       const nickname = AGE_NICKNAMES[label];
-      legend.innerHTML += `
-        <div class="legend-item${nickname ? ' legend-item--tip' : ''}" ${nickname ? `data-tip="${nickname}"` : ''}>
-          <div class="legend-swatch" style="background:${color}"></div>
-          ${label}
-        </div>`;
+      const item = document.createElement('div');
+      item.className = 'legend-item' + (nickname ? ' legend-item--tip' : '');
+      if (nickname) item.dataset.tip = nickname;
+      const swatch = document.createElement('div');
+      swatch.className = 'legend-swatch';
+      swatch.style.background = color;
+      item.appendChild(swatch);
+      item.appendChild(document.createTextNode(' ' + label));
+      legend.appendChild(item);
     });
     vizFooter.appendChild(legend);
     container.appendChild(vizFooter);
@@ -2263,7 +2269,14 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     // Header
     const tlHeader = document.createElement('div');
     tlHeader.className = 'tl-header';
-    tlHeader.innerHTML = `<span class="tl-title">Contract Expiries</span><span class="tl-subtitle">by season end</span>`;
+    const tlTitle = document.createElement('span');
+    tlTitle.className = 'tl-title';
+    tlTitle.textContent = 'Contract Expiries';
+    const tlSub = document.createElement('span');
+    tlSub.className = 'tl-subtitle';
+    tlSub.textContent = 'by season end';
+    tlHeader.appendChild(tlTitle);
+    tlHeader.appendChild(tlSub);
     tlWrap.appendChild(tlHeader);
 
     const tlBody = document.createElement('div');
@@ -2334,7 +2347,14 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     // Section divider + header (matching tl-wrap style)
     const header = document.createElement('div');
     header.style.cssText = 'margin-top:32px;padding-top:24px;border-top:1px solid var(--border);margin-bottom:20px;display:flex;align-items:baseline;gap:10px;';
-    header.innerHTML = `<span class="tl-title">Age vs. Cost</span><span class="tl-subtitle">click a dot for details</span>`;
+    const scTitle = document.createElement('span');
+    scTitle.className = 'tl-title';
+    scTitle.textContent = 'Age vs. Cost';
+    const scSub = document.createElement('span');
+    scSub.className = 'tl-subtitle';
+    scSub.textContent = 'click a dot for details';
+    header.appendChild(scTitle);
+    header.appendChild(scSub);
     section.appendChild(header);
 
     const W = finViz.clientWidth || 860;
