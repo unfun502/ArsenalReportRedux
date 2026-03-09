@@ -252,11 +252,26 @@
     });
 
     // ── Image upload ───────────────────────────────────────────────────────
+    function nameToSlug(name) {
+      return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+
     document.getElementById('imgFile').addEventListener('change', function () {
       const file = this.files[0];
       if (!file) return;
       document.getElementById('imgFileName').textContent = file.name;
       document.getElementById('uploadBtn').style.display = 'inline-flex';
+
+      // Pre-fill CDN URL from player name + file extension
+      const playerName = document.querySelector('[name=name]').value.trim();
+      if (playerName) {
+        const ext = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : 'png';
+        const url = `https://cdn.devlab502.net/arsenal-report/${nameToSlug(playerName)}.${ext}`;
+        document.getElementById('imgUrlInput').value = url;
+      }
+
+      // Show local preview
       const reader = new FileReader();
       reader.onload = e => {
         const preview = document.getElementById('imgPreview');
