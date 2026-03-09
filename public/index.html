@@ -300,6 +300,7 @@
   .dc-wrap {
     max-width: 760px;
     margin: 0 auto;
+    position: relative;
   }
 
   .dc-pitch {
@@ -369,12 +370,12 @@
 
   .dc-pos-label {
     font-family: 'Barlow Condensed', sans-serif;
-    font-size: 9px;
+    font-size: 11px;
+    font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--gold);
     margin-bottom: 5px;
-    opacity: 0.5;
   }
 
   .dc-starter {
@@ -449,13 +450,11 @@
   }
 
   /* ── "How the team was built" ──────────────────────────────────────── */
-  .dc-controls-row {
-    display: flex;
-    justify-content: flex-end;
-    padding-bottom: 14px;
-  }
-
   .build-toggle-btn {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 10;
     font-family: 'Barlow Condensed', sans-serif;
     font-size: 11px;
     font-weight: 600;
@@ -470,7 +469,27 @@
     transition: background 0.15s, border-color 0.15s;
   }
   .build-toggle-btn:hover { background: rgba(200,150,12,0.15); border-color: rgba(200,150,12,0.5); }
-  .build-toggle-btn.active { background: rgba(200,150,12,0.18); }
+  .build-toggle-btn.active { display: none; }
+
+  .btl-cost {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #0891b2;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .btl-cost.flash {
+    animation: cost-flash 0.55s ease-out forwards;
+  }
+  @keyframes cost-flash {
+    0%   { color: #fff; transform: scale(1.2); text-shadow: 0 0 18px #0891b2; }
+    100% { color: #0891b2; transform: scale(1); text-shadow: none; }
+  }
 
   .btl-controls {
     display: flex;
@@ -1633,15 +1652,14 @@
 
 <div id="depthPage">
   <div class="dc-wrap">
-    <div class="dc-controls-row">
-      <button id="buildBtn" class="build-toggle-btn">How the team was built</button>
-    </div>
+    <button id="buildBtn" class="build-toggle-btn">How the team was built</button>
     <div class="dc-pitch" id="dcPitch"></div>
     <div id="btlView" style="display:none">
       <div class="btl-controls">
         <button id="btlRewind" class="btl-ctrl-btn">&#9664; Rewind</button>
         <div class="btl-year-display" id="btlYear">—</div>
         <button id="btlPlayPause" class="btl-ctrl-btn">&#8741; Pause</button>
+        <button id="btlClose" class="btl-ctrl-btn">&#10005; Close</button>
       </div>
       <div class="btl-layout">
         <div class="btl-list-wrap">
@@ -2168,7 +2186,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     });
     const sortedYears = Object.keys(yearGroups).map(Number).sort((a, b) => a - b);
 
-    btlState = { yearGroups, sortedYears, yearIdx: 0, stepIdx: 0, playing: true, timer: null, finished: false };
+    btlState = { yearGroups, sortedYears, yearIdx: 0, stepIdx: 0, playing: true, timer: null, finished: false, totalCost: 0 };
 
     btlRenderEmptyPitch();
     btlSlotLookup = btlBuildSlotLookup();
@@ -2236,6 +2254,12 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     overflow.id = 'btlOverflow';
     overflow.className = 'btl-overflow';
     pitch.appendChild(overflow);
+
+    const costEl = document.createElement('div');
+    costEl.id = 'btlCost';
+    costEl.className = 'btl-cost';
+    costEl.textContent = '€0m';
+    pitch.appendChild(costEl);
   }
 
   function btlBuildSlotLookup() {
@@ -2284,6 +2308,8 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
 
       card.appendChild(nameEl);
       card.appendChild(metaEl);
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', () => openDetail(p));
       list.appendChild(card);
     });
 
@@ -2318,7 +2344,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
 
     if (targetEl && cardEl) {
       flyToSlot(cardEl, targetEl, lastName, posColor, () => {
-        btlFillSlot(lastName, targetEl);
+        btlFillSlot(lastName, targetEl, p.transfer_fee_raw || 0, p);
         doNext();
       });
     } else {
@@ -2371,11 +2397,39 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     clone.addEventListener('transitionend', () => { clone.remove(); onDone(); }, { once: true });
   }
 
-  function btlFillSlot(lastName, slotEl) {
+  function btlAnimateCost(fromVal, toVal) {
+    const el = document.getElementById('btlCost');
+    if (!el) return;
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+    const start = performance.now();
+    const dur = 550;
+    function tick(now) {
+      const t = Math.min((now - start) / dur, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      const cur = fromVal + (toVal - fromVal) * ease;
+      el.textContent = '€' + cur.toFixed(1) + 'm';
+      if (t < 1) requestAnimationFrame(tick);
+      else el.textContent = '€' + toVal.toFixed(1) + 'm';
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function btlFillSlot(lastName, slotEl, fee, p) {
     slotEl.textContent = lastName;
     slotEl.classList.remove('empty');
     slotEl.classList.add('slot-popping');
     slotEl.addEventListener('animationend', () => slotEl.classList.remove('slot-popping'), { once: true });
+    if (fee && btlState) {
+      const prev = btlState.totalCost;
+      btlState.totalCost += fee;
+      btlAnimateCost(prev, btlState.totalCost);
+    }
+    if (p) {
+      slotEl.style.cursor = 'pointer';
+      slotEl.addEventListener('click', () => openDetail(p), { once: false });
+    }
   }
 
   function btlFinished() {
@@ -2400,6 +2454,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     btlState.finished = false;
     const btn = document.getElementById('btlPlayPause');
     if (btn) btn.textContent = '\u2016 Pause';
+    btlState.totalCost = 0;
     btlRenderEmptyPitch();
     btlSlotLookup = btlBuildSlotLookup();
     btlStartYear(0);
@@ -3018,6 +3073,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
   });
   document.getElementById('btlRewind').addEventListener('click', btlRewind);
   document.getElementById('btlPlayPause').addEventListener('click', btlTogglePlay);
+  document.getElementById('btlClose').addEventListener('click', () => document.getElementById('buildBtn').click());
 
   let _resizeTimer, _lastFinVizWidth = 0;
   window.addEventListener('resize', () => {
