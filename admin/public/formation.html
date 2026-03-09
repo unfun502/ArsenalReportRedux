@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formation — Arsenal Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e5e5e5; }
+    header { background: #c0392b; padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+    header h1 { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    nav a { color: rgba(255,255,255,.75); text-decoration: none; font-size: .85rem; margin-left: 12px; }
+    nav a:hover, nav a.active { color: #fff; }
+    .container { max-width: 900px; margin: 0 auto; padding: 28px 24px; }
+    h2 { font-size: 1.2rem; margin-bottom: 6px; }
+    .subtitle { font-size: .875rem; color: #666; margin-bottom: 24px; }
+    .row-section { margin-bottom: 28px; }
+    .row-label { font-size: .75rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .slots-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .slot-card { background: #171717; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px 14px; min-width: 150px; flex: 1; max-width: 220px; }
+    .slot-pos { font-size: .75rem; font-weight: 700; color: #c0392b; margin-bottom: 8px; letter-spacing: .5px; }
+    .slot-names { list-style: none; margin-bottom: 10px; }
+    .slot-names li { display: flex; align-items: center; justify-content: space-between; padding: 3px 0; font-size: .875rem; border-bottom: 1px solid #1e1e1e; }
+    .slot-names li:last-child { border-bottom: none; }
+    .slot-names li span { color: #aaa; font-size: .7rem; margin-right: 4px; }
+    .slot-names li .rm { color: #666; cursor: pointer; font-size: .9rem; padding: 1px 4px; background: none; border: none; }
+    .slot-names li .rm:hover { color: #e74c3c; }
+    .add-name-row { display: flex; gap: 6px; }
+    .add-name-row input { flex: 1; padding: 5px 8px; border-radius: 5px; border: 1px solid #2a2a2a; background: #111; color: #e5e5e5; font-size: .82rem; }
+    .add-name-row button { padding: 5px 9px; border-radius: 5px; background: #c0392b; color: #fff; border: none; cursor: pointer; font-size: .82rem; font-weight: 700; }
+    #status { padding: 10px 14px; border-radius: 6px; font-size: .875rem; margin-bottom: 16px; display: none; }
+    .status-ok { background: #1a3d2b; color: #4ade80; display: block !important; }
+    .status-err { background: #3d1a1a; color: #f87171; display: block !important; }
+    .hint { font-size: .75rem; color: #555; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚽ Arsenal Report Admin</h1>
+    <nav>
+      <a href="/">Players</a>
+      <a href="/formation.html" class="active">Formation</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <div id="status"></div>
+    <h2>Depth Chart / Formation</h2>
+    <p class="subtitle">First name in each slot = starter. Drag to reorder (coming soon), or remove/re-add names to change order.</p>
+    <div id="formationGrid">
+      <p style="color:#555;text-align:center;padding:32px">Loading…</p>
+    </div>
+  </div>
+
+  <script>
+    let slots = [];
+
+    async function loadFormation() {
+      const r = await fetch('/api/formation');
+      slots = await r.json();
+      render();
+    }
+
+    function render() {
+      const grid = document.getElementById('formationGrid');
+      const rows = [...new Set(slots.map(s => s.row_name))];
+
+      grid.innerHTML = rows.map(rowName => {
+        const rowSlots = slots.filter(s => s.row_name === rowName);
+        return `
+          <div class="row-section">
+            <div class="row-label">${rowName}</div>
+            <div class="slots-row">
+              ${rowSlots.map(slot => renderSlot(slot)).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSlot(slot) {
+      const names = slot.player_names || [];
+      return `
+        <div class="slot-card" data-id="${slot.id}">
+          <div class="slot-pos">${slot.pos}</div>
+          <ol class="slot-names">
+            ${names.map((name, i) => `
+              <li>
+                <span>${i === 0 ? '▶' : (i + 1)}</span>
+                ${name}
+                <button class="rm" onclick="removeName(${slot.id}, '${name.replace(/'/g,"\\'")}')">✕</button>
+              </li>
+            `).join('') || '<li style="color:#555;font-size:.8rem">Empty</li>'}
+          </ol>
+          <div class="add-name-row">
+            <input type="text" id="inp-${slot.id}" placeholder="Add name…" onkeydown="if(event.key==='Enter'){addName(${slot.id});event.preventDefault();}">
+            <button onclick="addName(${slot.id})">+</button>
+          </div>
+          <p class="hint">First = starter</p>
+        </div>
+      `;
+    }
+
+    async function addName(slotId) {
+      const inp = document.getElementById(`inp-${slotId}`);
+      const name = inp.value.trim();
+      if (!name) return;
+      const slot = slots.find(s => s.id === slotId);
+      const newNames = [...(slot.player_names || []), name];
+      await saveSlot(slotId, newNames);
+      inp.value = '';
+    }
+
+    async function removeName(slotId, name) {
+      const slot = slots.find(s => s.id === slotId);
+      const newNames = (slot.player_names || []).filter(n => n !== name);
+      await saveSlot(slotId, newNames);
+    }
+
+    async function saveSlot(slotId, playerNames) {
+      const r = await fetch(`/api/formation/${slotId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_names: playerNames }),
+      });
+      if (r.ok) {
+        const slot = slots.find(s => s.id === slotId);
+        slot.player_names = playerNames;
+        render();
+        showStatus('Formation saved', 'ok');
+      } else {
+        showStatus('Error: ' + (await r.text()), 'err');
+      }
+    }
+
+    function showStatus(msg, type) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = type === 'ok' ? 'status-ok' : 'status-err';
+      setTimeout(() => { el.className = ''; }, 3000);
+    }
+
+    loadFormation();
+  </script>
+</body>
+</html>

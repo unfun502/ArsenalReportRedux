@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arsenal Report Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e5e5e5; min-height: 100vh; }
+    header { background: #c0392b; padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+    header h1 { font-size: 1.1rem; font-weight: 700; color: #fff; letter-spacing: .5px; }
+    nav a { color: rgba(255,255,255,.75); text-decoration: none; font-size: .85rem; margin-left: 12px; }
+    nav a:hover, nav a.active { color: #fff; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .toolbar { display: flex; gap: 10px; margin-bottom: 18px; align-items: center; flex-wrap: wrap; }
+    .toolbar input { padding: 7px 12px; border-radius: 6px; border: 1px solid #333; background: #1a1a1a; color: #e5e5e5; font-size: .875rem; width: 220px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px; font-size: .85rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+    .btn-primary { background: #c0392b; color: #fff; }
+    .btn-primary:hover { background: #a93226; }
+    .btn-secondary { background: #2a2a2a; color: #ccc; border: 1px solid #383838; }
+    .btn-secondary:hover { background: #333; }
+    .btn-sm { padding: 4px 10px; font-size: .8rem; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 9px; font-size: .75rem; font-weight: 600; }
+    .badge-active { background: #1a3d2b; color: #4ade80; }
+    .badge-inactive { background: #3d1a1a; color: #f87171; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    th { background: #1a1a1a; color: #999; font-weight: 600; text-align: left; padding: 9px 12px; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
+    td { padding: 9px 12px; border-bottom: 1px solid #1e1e1e; vertical-align: middle; }
+    tr:hover td { background: #161616; }
+    .pos-tag { font-size: .75rem; color: #aaa; }
+    .text-muted { color: #666; }
+    .text-accent { color: #e74c3c; font-weight: 600; }
+    .actions { display: flex; gap: 6px; }
+    #status { padding: 10px 14px; border-radius: 6px; font-size: .875rem; margin-bottom: 14px; display: none; }
+    .status-ok { background: #1a3d2b; color: #4ade80; display: block !important; }
+    .status-err { background: #3d1a1a; color: #f87171; display: block !important; }
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 4px; }
+    .filter-btn { padding: 4px 12px; border-radius: 14px; border: 1px solid #333; background: transparent; color: #999; font-size: .8rem; cursor: pointer; }
+    .filter-btn.on { background: #c0392b; border-color: #c0392b; color: #fff; }
+    .player-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #222; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚽ Arsenal Report Admin</h1>
+    <nav>
+      <a href="/" class="active">Players</a>
+      <a href="/formation.html">Formation</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <div id="status"></div>
+
+    <div class="toolbar">
+      <input type="text" id="search" placeholder="Search players…">
+      <div class="filter-bar">
+        <button class="filter-btn on" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="active">Active</button>
+        <button class="filter-btn" data-filter="inactive">Inactive</button>
+      </div>
+      <a href="/player.html" class="btn btn-primary">+ Add Player</a>
+    </div>
+
+    <table id="playerTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Player</th>
+          <th>Pos</th>
+          <th>Nationality</th>
+          <th>Transfer</th>
+          <th>Salary P/W</th>
+          <th>Contract Yrs</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="9" style="text-align:center;color:#555;padding:24px">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let allPlayers = [];
+    let filterMode = 'all';
+
+    const fmt = {
+      pw: raw => raw ? '€' + Math.round(raw / 1000) + 'k' : '—',
+      fee: (type, raw) => {
+        if (type === 'Transfer' && raw) return '€' + raw + 'm';
+        return type || '—';
+      },
+      yrs: expiration => {
+        if (!expiration) return '—';
+        const days = (new Date(expiration) - new Date()) / (1000 * 60 * 60 * 24);
+        const n = Math.max(0, Math.ceil(days / 365.25));
+        return n === 0 ? 'Expired' : n;
+      },
+    };
+
+    async function loadPlayers() {
+      const r = await fetch('/api/players');
+      allPlayers = await r.json();
+      render();
+    }
+
+    function render() {
+      const q = document.getElementById('search').value.toLowerCase();
+      const body = document.getElementById('tableBody');
+
+      let rows = allPlayers.filter(p => {
+        if (filterMode === 'active' && !p.active) return false;
+        if (filterMode === 'inactive' && p.active) return false;
+        if (q && !p.name.toLowerCase().includes(q) && !(p.nationality||'').toLowerCase().includes(q)) return false;
+        return true;
+      });
+
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#555;padding:24px">No players found</td></tr>';
+        return;
+      }
+
+      body.innerHTML = rows.map(p => `
+        <tr>
+          <td>${p.squad_num ?? '<span class="text-muted">TBC</span>'}</td>
+          <td>
+            ${p.img_url ? `<img src="${p.img_url}" class="player-img" loading="lazy" onerror="this.style.display='none'">` : ''}
+            <strong>${p.name}</strong>
+          </td>
+          <td><span class="pos-tag">${p.pos}</span></td>
+          <td>${p.nationality}</td>
+          <td class="text-accent">${fmt.fee(p.transfer_type, p.transfer_fee_raw)}</td>
+          <td>${fmt.pw(p.salary_pw_raw)}</td>
+          <td>${fmt.yrs(p.expiration)}</td>
+          <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
+          <td class="actions">
+            <a href="/player.html?id=${p.id}" class="btn btn-secondary btn-sm">Edit</a>
+            <button onclick="toggleActive(${p.id}, ${p.active})" class="btn btn-secondary btn-sm">${p.active ? 'Deactivate' : 'Reactivate'}</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function toggleActive(id, currentActive) {
+      const action = currentActive ? 'Deactivate' : 'Reactivate';
+      if (!confirm(`${action} this player?`)) return;
+      const r = await fetch(`/api/players/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: !currentActive }),
+      });
+      if (r.ok) {
+        showStatus(`Player ${action.toLowerCase()}d`, 'ok');
+        await loadPlayers();
+      } else {
+        showStatus('Error: ' + (await r.text()), 'err');
+      }
+    }
+
+    function showStatus(msg, type) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = type === 'ok' ? 'status-ok' : 'status-err';
+      setTimeout(() => { el.className = ''; el.style.display = 'none'; }, 3000);
+    }
+
+    document.getElementById('search').addEventListener('input', render);
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+        btn.classList.add('on');
+        filterMode = btn.dataset.filter;
+        render();
+      });
+    });
+
+    loadPlayers();
+  </script>
+</body>
+</html>

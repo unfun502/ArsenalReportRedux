@@ -2,12 +2,23 @@
   "name": "arsenalreportredux",
   "version": "1.0.0",
   "private": true,
-  "description": "Arsenal FC squad report for 2025-26 season — Cloudflare Workers static site",
+  "description": "Arsenal FC squad report for 2025-26 season — Cloudflare Workers static site + local admin",
   "scripts": {
     "dev": "npx wrangler dev",
-    "deploy": "npx wrangler deploy"
+    "deploy": "npx wrangler deploy",
+    "admin": "node admin/server.js",
+    "seed": "node admin/seed.js",
+    "import-excel": "node admin/import-excel.js"
   },
+  "type": "module",
   "dependencies": {
-    "@cloudflare/kv-asset-handler": "^0.3.4"
+    "@aws-sdk/client-s3": "^3.1004.0",
+    "@cloudflare/kv-asset-handler": "^0.3.4",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "multer": "^2.1.1",
+    "node-fetch": "^3.3.2",
+    "open": "^10.1.0"
   }
 }

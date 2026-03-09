@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Player — Arsenal Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e5e5e5; }
+    header { background: #c0392b; padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+    header h1 { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    nav a { color: rgba(255,255,255,.75); text-decoration: none; font-size: .85rem; margin-left: 12px; }
+    nav a:hover { color: #fff; }
+    .container { max-width: 860px; margin: 0 auto; padding: 28px 24px; }
+    h2 { font-size: 1.3rem; margin-bottom: 24px; color: #fff; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-size: .8rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: .5px; }
+    input, select, textarea { padding: 8px 11px; border-radius: 6px; border: 1px solid #2e2e2e; background: #1a1a1a; color: #e5e5e5; font-size: .9rem; width: 100%; }
+    input:focus, select:focus { outline: none; border-color: #c0392b; }
+    input[readonly] { color: #666; cursor: default; }
+    select option { background: #1a1a1a; }
+    .section { margin-top: 32px; padding-top: 24px; border-top: 1px solid #222; }
+    .section h3 { font-size: 1rem; color: #ccc; margin-bottom: 16px; }
+    .btn { display: inline-flex; align-items: center; padding: 8px 16px; border-radius: 6px; font-size: .9rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+    .btn-primary { background: #c0392b; color: #fff; }
+    .btn-primary:hover { background: #a93226; }
+    .btn-secondary { background: #2a2a2a; color: #ccc; border: 1px solid #333; }
+    .btn-secondary:hover { background: #333; }
+    .btn-danger { background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 4px 10px; font-size: .8rem; }
+    .btn-danger:hover { background: #3d1a1a; }
+    .btn-sm { padding: 5px 11px; font-size: .82rem; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .actions { display: flex; gap: 10px; margin-top: 28px; }
+    #status { padding: 10px 14px; border-radius: 6px; font-size: .875rem; margin-bottom: 16px; display: none; }
+    .status-ok { background: #1a3d2b; color: #4ade80; display: block !important; }
+    .status-err { background: #3d1a1a; color: #f87171; display: block !important; }
+    /* Salary history */
+    .salary-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    .salary-table th { background: #1a1a1a; color: #888; padding: 7px 10px; text-align: left; border-bottom: 1px solid #2a2a2a; }
+    .salary-table td { padding: 7px 10px; border-bottom: 1px solid #1e1e1e; }
+    .add-season { display: flex; gap: 8px; margin-top: 10px; align-items: flex-end; }
+    .add-season input, .add-season select { width: auto; }
+    /* Contract years display */
+    .contract-yrs-display { padding: 8px 11px; border-radius: 6px; border: 1px solid #2e2e2e; background: #111; color: #888; font-size: .9rem; font-style: italic; }
+    /* Image upload */
+    .img-upload-area { display: flex; flex-direction: column; gap: 10px; }
+    .img-preview-row { display: flex; align-items: center; gap: 12px; }
+    .img-preview { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: #222; border: 2px solid #333; }
+    .img-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .img-filename { color: #666; font-size: .8rem; }
+    .img-url-row { display: flex; flex-direction: column; gap: 5px; }
+    .img-url-row label { font-size: .75rem; color: #555; text-transform: none; letter-spacing: 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚽ Arsenal Report Admin</h1>
+    <nav>
+      <a href="/">Players</a>
+      <a href="/formation.html">Formation</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <div id="status"></div>
+    <h2 id="pageTitle">Add Player</h2>
+
+    <form id="playerForm">
+      <div class="grid">
+        <div class="field full">
+          <label>Full Name *</label>
+          <input name="name" required placeholder="e.g. Bukayo Saka">
+        </div>
+        <div class="field">
+          <label>Squad Number</label>
+          <input name="squad_num" type="number" placeholder="e.g. 7">
+        </div>
+        <div class="field">
+          <label>Nationality *</label>
+          <input name="nationality" required placeholder="e.g. England">
+        </div>
+        <div class="field">
+          <label>Position (display) *</label>
+          <input name="pos" required placeholder="e.g. RW / CAM">
+        </div>
+        <div class="field">
+          <label>Position Group *</label>
+          <select name="pos_group" required>
+            <option value="">— select —</option>
+            <option>Forward</option>
+            <option>Midfielder</option>
+            <option>Defender</option>
+            <option>Goalkeeper</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Date of Birth</label>
+          <input name="dob" type="date">
+        </div>
+        <div class="field">
+          <label>Transfer Type *</label>
+          <select name="transfer_type" required>
+            <option value="Transfer">Transfer</option>
+            <option value="Academy">Academy</option>
+            <option value="Loan">Loan</option>
+            <option value="Free">Free</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Transfer Fee (millions)</label>
+          <input name="transfer_fee_raw" type="number" step="0.1" placeholder="e.g. 75.0">
+        </div>
+        <div class="field">
+          <label>Transfer Date</label>
+          <input name="transfer_date" type="date">
+        </div>
+        <div class="field">
+          <label>Year Signed (end-of-year)</label>
+          <input name="year_signed" type="number" placeholder="e.g. 2023">
+        </div>
+        <div class="field">
+          <label>Contract Start (Signed)</label>
+          <input name="signed" type="date">
+        </div>
+        <div class="field">
+          <label>Contract Expiration</label>
+          <input name="expiration" type="date" id="expirationInput">
+        </div>
+        <div class="field">
+          <label>Contract Years Remaining (calculated)</label>
+          <div class="contract-yrs-display" id="contractYrsDisplay">—</div>
+        </div>
+        <div class="field">
+          <label>Weekly Salary</label>
+          <input name="salary_pw_raw" id="salaryPW" type="text" placeholder="e.g. €278,033" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Annual Salary 25/26</label>
+          <input name="salary_py_raw" id="salaryPY" type="text" placeholder="e.g. €14,457,723" autocomplete="off">
+        </div>
+        <div class="field full">
+          <label>Player Image</label>
+          <div class="img-upload-area">
+            <div class="img-preview-row">
+              <img id="imgPreview" class="img-preview" style="display:none" onerror="this.style.display='none'">
+              <div class="img-controls">
+                <input type="file" id="imgFile" accept="image/*" style="display:none">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('imgFile').click()">Choose Image…</button>
+                <span class="img-filename" id="imgFileName"></span>
+                <button type="button" class="btn btn-primary btn-sm" id="uploadBtn" onclick="uploadImage()" style="display:none">Upload to CDN</button>
+              </div>
+            </div>
+            <div class="img-url-row">
+              <label>CDN URL</label>
+              <input name="img_url" id="imgUrlInput" type="url" placeholder="https://cdn.devlab502.net/arsenal-report/..." autocomplete="off">
+            </div>
+          </div>
+        </div>
+        <div class="field full">
+          <label>FBref URL</label>
+          <input name="fbref_url" type="url" placeholder="https://fbref.com/en/players/...">
+        </div>
+        <div class="field">
+          <label>FBref ID</label>
+          <input name="fbref_id" placeholder="e.g. bc7dc208">
+        </div>
+        <div class="field">
+          <label>Active</label>
+          <select name="active">
+            <option value="true">Yes (active squad)</option>
+            <option value="false">No (departed)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Salary History -->
+      <div class="section" id="salarySection" style="display:none">
+        <h3>Salary History (Annual)</h3>
+        <table class="salary-table">
+          <thead>
+            <tr><th>Season</th><th>Annual Salary</th><th></th></tr>
+          </thead>
+          <tbody id="salaryRows">
+            <tr><td colspan="3" style="color:#555">No history yet</td></tr>
+          </tbody>
+        </table>
+        <div class="add-season">
+          <div class="field">
+            <label>Season</label>
+            <input id="newSeason" placeholder="25/26" style="width:80px">
+          </div>
+          <div class="field">
+            <label>Annual (raw €)</label>
+            <input id="newSalary" type="number" placeholder="14457723" style="width:140px">
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="addSeason()">Add</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary" id="saveBtn">Save Player</button>
+        <a href="/" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const playerId = params.get('id');
+    let salaryHistory = [];
+
+    // ── Salary formatting helpers ──────────────────────────────────────────
+    function fmtEuro(raw) {
+      if (raw === null || raw === undefined || raw === '') return '';
+      return '€' + Math.round(raw).toLocaleString('en-US');
+    }
+    function parseEuro(str) {
+      if (!str || str === '') return null;
+      const n = parseInt(String(str).replace(/[^0-9]/g, ''), 10);
+      return isNaN(n) ? null : n;
+    }
+
+    // ── Contract years calculation ─────────────────────────────────────────
+    function calcContractYrs(expiration) {
+      if (!expiration) return null;
+      const days = (new Date(expiration) - new Date()) / (1000 * 60 * 60 * 24);
+      return Math.max(0, Math.ceil(days / 365.25));
+    }
+    function updateContractYrsDisplay() {
+      const expVal = document.getElementById('expirationInput').value;
+      const yrs = calcContractYrs(expVal);
+      document.getElementById('contractYrsDisplay').textContent =
+        yrs === null ? '—' : yrs === 0 ? 'Expired' : yrs + (yrs === 1 ? ' year' : ' years');
+    }
+    document.getElementById('expirationInput').addEventListener('change', updateContractYrsDisplay);
+
+    // ── Format salary inputs on blur, accept raw on focus ─────────────────
+    ['salaryPW', 'salaryPY'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('focus', () => {
+        const raw = parseEuro(el.value);
+        el.value = raw !== null ? raw : '';
+        el.type = 'number';
+      });
+      el.addEventListener('blur', () => {
+        el.type = 'text';
+        const raw = parseEuro(el.value) ?? (el.value ? parseInt(el.value, 10) : null);
+        el.value = raw !== null ? fmtEuro(raw) : '';
+      });
+    });
+
+    // ── Image upload ───────────────────────────────────────────────────────
+    document.getElementById('imgFile').addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+      document.getElementById('imgFileName').textContent = file.name;
+      document.getElementById('uploadBtn').style.display = 'inline-flex';
+      const reader = new FileReader();
+      reader.onload = e => {
+        const preview = document.getElementById('imgPreview');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Show preview from URL field when editing
+    document.getElementById('imgUrlInput').addEventListener('change', function () {
+      const preview = document.getElementById('imgPreview');
+      if (this.value) { preview.src = this.value; preview.style.display = 'block'; }
+      else preview.style.display = 'none';
+    });
+
+    async function uploadImage() {
+      const file = document.getElementById('imgFile').files[0];
+      const playerName = document.querySelector('[name=name]').value.trim();
+      if (!file) { alert('No file selected'); return; }
+      if (!playerName) { alert('Enter the player\'s name first — it\'s used to generate the filename'); return; }
+      const btn = document.getElementById('uploadBtn');
+      btn.textContent = 'Uploading…';
+      btn.disabled = true;
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('playerName', playerName);
+      const r = await fetch('/api/upload-image', { method: 'POST', body: formData });
+      if (r.ok) {
+        const { url } = await r.json();
+        document.getElementById('imgUrlInput').value = url;
+        document.getElementById('imgPreview').src = url;
+        btn.textContent = '✓ Uploaded';
+        showStatus('Image uploaded to CDN!', 'ok');
+      } else {
+        const err = await r.json().catch(() => ({}));
+        showStatus('Upload failed: ' + (err.error || r.status), 'err');
+        btn.textContent = 'Upload to CDN';
+        btn.disabled = false;
+      }
+    }
+
+    // ── Load existing player if editing ───────────────────────────────────
+    if (playerId) {
+      document.getElementById('pageTitle').textContent = 'Edit Player';
+      document.getElementById('salarySection').style.display = 'block';
+
+      fetch(`/api/players/${playerId}`)
+        .then(r => r.json())
+        .then(p => {
+          if (!p) return;
+          const form = document.getElementById('playerForm');
+          const salaryFields = ['salary_pw_raw', 'salary_py_raw'];
+          Object.entries(p).forEach(([key, val]) => {
+            const el = form.elements[key];
+            if (!el || val === null || val === undefined) return;
+            if (salaryFields.includes(key)) {
+              el.type = 'text';
+              el.value = fmtEuro(val);
+            } else if (el.tagName === 'SELECT') {
+              el.value = String(val);
+            } else {
+              el.value = val;
+            }
+          });
+          // Show image preview if img_url set
+          if (p.img_url) {
+            const preview = document.getElementById('imgPreview');
+            preview.src = p.img_url;
+            preview.style.display = 'block';
+          }
+          updateContractYrsDisplay();
+        });
+
+      fetch(`/api/players/${playerId}/salary-history`)
+        .then(r => r.json())
+        .then(rows => { salaryHistory = rows; renderSalaryHistory(); });
+    }
+
+    function renderSalaryHistory() {
+      const tbody = document.getElementById('salaryRows');
+      if (!salaryHistory.length) {
+        tbody.innerHTML = '<tr><td colspan="3" style="color:#555">No history yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = salaryHistory
+        .sort((a, b) => a.season.localeCompare(b.season))
+        .map(row => `
+          <tr>
+            <td>${row.season}</td>
+            <td>€${row.salary_py_raw.toLocaleString()}</td>
+            <td><button class="btn btn-danger btn-sm" onclick="deleteSeason('${row.season}')">✕</button></td>
+          </tr>
+        `).join('');
+    }
+
+    async function addSeason() {
+      const season = document.getElementById('newSeason').value.trim();
+      const salary = parseInt(document.getElementById('newSalary').value, 10);
+      if (!season || isNaN(salary)) { alert('Enter a season and salary'); return; }
+      const r = await fetch(`/api/players/${playerId}/salary-history/${encodeURIComponent(season)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ salary_py_raw: salary }),
+      });
+      if (r.ok) {
+        const existing = salaryHistory.findIndex(s => s.season === season);
+        if (existing >= 0) salaryHistory[existing].salary_py_raw = salary;
+        else salaryHistory.push({ season, salary_py_raw: salary });
+        renderSalaryHistory();
+        document.getElementById('newSeason').value = '';
+        document.getElementById('newSalary').value = '';
+        showStatus('Salary history updated', 'ok');
+      } else {
+        showStatus('Error saving salary: ' + (await r.text()), 'err');
+      }
+    }
+
+    async function deleteSeason(season) {
+      if (!confirm(`Delete ${season} salary history?`)) return;
+      const r = await fetch(`/api/players/${playerId}/salary-history/${encodeURIComponent(season)}`, { method: 'DELETE' });
+      if (r.ok) {
+        salaryHistory = salaryHistory.filter(s => s.season !== season);
+        renderSalaryHistory();
+        showStatus('Season deleted', 'ok');
+      }
+    }
+
+    // ── Save player ──────────────────────────────────────────────────────
+    document.getElementById('playerForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = e.target;
+      const data = {};
+
+      ['name','squad_num','nationality','pos','pos_group','dob','transfer_type','transfer_fee_raw',
+       'transfer_date','year_signed','signed','expiration','salary_pw_raw',
+       'salary_py_raw','img_url','fbref_url','fbref_id','active'].forEach(key => {
+        const el = form.elements[key];
+        if (!el) return;
+        let val = typeof el.value === 'string' ? el.value.trim() : el.value;
+        if (val === '') { data[key] = null; return; }
+        if (key === 'salary_pw_raw' || key === 'salary_py_raw') {
+          val = parseEuro(val);
+        } else if (['squad_num','year_signed'].includes(key)) {
+          val = parseInt(val, 10);
+        } else if (key === 'transfer_fee_raw') {
+          val = parseFloat(val);
+        } else if (key === 'active') {
+          val = val === 'true';
+        }
+        data[key] = val;
+      });
+
+      const method = playerId ? 'PATCH' : 'POST';
+      const url = playerId ? `/api/players/${playerId}` : '/api/players';
+
+      const r = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (r.ok) {
+        const result = await r.json();
+        if (!playerId) {
+          const id = Array.isArray(result) ? result[0]?.id : result?.id;
+          if (id) { location.href = `/player.html?id=${id}`; return; }
+        }
+        showStatus('Player saved!', 'ok');
+      } else {
+        showStatus('Error: ' + (await r.text()), 'err');
+      }
+    });
+
+    function showStatus(msg, type) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = type === 'ok' ? 'status-ok' : 'status-err';
+      setTimeout(() => { el.className = ''; }, 4000);
+    }
+  </script>
+</body>
+</html>
