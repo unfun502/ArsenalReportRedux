@@ -1591,7 +1591,7 @@ async function loadData() {
     });
     FORMATION = Object.values(rowMap).sort((a, b) => a.order - b.order);
 
-    loadData();
+    renderGrid();
     renderFinTable();
   } catch (err) {
     console.error('loadData failed:', err);
@@ -2535,8 +2535,8 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     }
   });
 
-  // Initial render
-  renderGrid();
+  // Initial render — fetch from API first
+  loadData();
 
 </script>
 </body>
