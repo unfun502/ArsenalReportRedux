@@ -1695,7 +1695,7 @@ function openDetail(p) {
   }
 
   const age = calcAge(p.dob);
-  const annualFmt = toMillions(p.annual);
+  const annualFmt = p.annual; // already formatted as "€X.Xm" by fmtPY()
 
   stats.innerHTML = `
     <div class="stat-cell">
