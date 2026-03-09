@@ -292,7 +292,7 @@
   /* ── Depth Chart page ────────────────────────────────────────────── */
   #depthPage {
     display: none;
-    padding: 40px 24px 80px;
+    padding: 20px 24px 80px;
   }
 
   #depthPage.visible { display: block; }
@@ -432,20 +432,12 @@
       transform: scale(0.72);
       margin-bottom: -28%;
     }
-    #btlPitch {
-      transform: none;
-      margin-bottom: 0;
-    }
   }
 
   @media (max-width: 480px) {
     .dc-pitch {
       transform: scale(0.55);
       margin-bottom: -46%;
-    }
-    #btlPitch {
-      transform: none;
-      margin-bottom: 0;
     }
   }
 
@@ -471,17 +463,18 @@
   .build-toggle-btn:hover { background: rgba(200,150,12,0.15); border-color: rgba(200,150,12,0.5); }
   .build-toggle-btn.active { display: none; }
 
+  .btl-year-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
   .btl-cost {
-    position: absolute;
-    top: 12px;
-    right: 12px;
     font-family: 'Barlow Condensed', sans-serif;
-    font-size: 22px;
+    font-size: 14px;
     font-weight: 700;
     letter-spacing: 2px;
     color: #0891b2;
-    z-index: 10;
-    pointer-events: none;
   }
   .btl-cost.flash {
     animation: cost-flash 0.55s ease-out forwards;
@@ -517,7 +510,7 @@
     flex: 1;
     text-align: center;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 32px;
+    font-size: 24px;
     letter-spacing: 3px;
     color: var(--text);
     transition: opacity 0.25s;
@@ -1657,7 +1650,10 @@
     <div id="btlView" style="display:none">
       <div class="btl-controls">
         <button id="btlRewind" class="btl-ctrl-btn">&#9664; Rewind</button>
-        <div class="btl-year-display" id="btlYear">—</div>
+        <div class="btl-year-group">
+          <div class="btl-year-display" id="btlYear">—</div>
+          <div id="btlCost" class="btl-cost">€0m</div>
+        </div>
         <button id="btlPlayPause" class="btl-ctrl-btn">&#8741; Pause</button>
         <button id="btlClose" class="btl-ctrl-btn">&#10005; Close</button>
       </div>
@@ -2255,11 +2251,9 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     overflow.className = 'btl-overflow';
     pitch.appendChild(overflow);
 
-    const costEl = document.createElement('div');
-    costEl.id = 'btlCost';
-    costEl.className = 'btl-cost';
-    costEl.textContent = '€0m';
-    pitch.appendChild(costEl);
+    // Reset static cost display in controls bar
+    const costEl = document.getElementById('btlCost');
+    if (costEl) { costEl.textContent = '€0m'; costEl.classList.remove('flash'); }
   }
 
   function btlBuildSlotLookup() {
@@ -2734,12 +2728,11 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     };
     document.addEventListener('click', outsideHandler);
 
-    // Clean up when switching views
-    const origCleanup = container._cleanup;
-    container._cleanup = () => {
+    // Clean up previous treemap popup (independent of scatter cleanup)
+    if (container._tmCleanup) container._tmCleanup();
+    container._tmCleanup = () => {
       popup.remove();
       document.removeEventListener('click', outsideHandler);
-      if (origCleanup) origCleanup();
     };
 
     // Group toggle + Legend
@@ -3050,7 +3043,10 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     ['btnData','btnViz'].forEach(id => document.getElementById(id).classList.remove('active'));
     document.getElementById(view === 'data' ? 'btnData' : 'btnViz').classList.add('active');
     const viz = document.getElementById('finViz');
-    if (view !== 'viz' && viz._cleanup) { viz._cleanup(); viz._cleanup = null; }
+    if (view !== 'viz') {
+      if (viz._tmCleanup) { viz._tmCleanup(); viz._tmCleanup = null; }
+      if (viz._cleanup)   { viz._cleanup();   viz._cleanup   = null; }
+    }
     document.getElementById('finTableWrap').style.display = view === 'data' ? '' : 'none';
     document.getElementById('finViz').style.display = view === 'viz' ? 'block' : 'none';
     if (view === 'viz') loadD3(() => { _lastFinVizWidth = document.getElementById('finViz').clientWidth; renderTreemap(); renderScatter(); });
