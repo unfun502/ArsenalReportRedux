@@ -1,8 +1,10 @@
 .env
 .env.local
 .env.*.local
+admin/.env
 .DS_Store
 *.log
 node_modules/
 dist/
 build/
+.wrangler/

@@ -1511,33 +1511,93 @@
   const NORGAARD_IMG  = `${CDN_BASE}/Norgaard.png`;
   const RICE_IMG      = `${CDN_BASE}/Rice.png`;
 
-const PLAYERS = [
-  { num: 29, name: 'Kai Havertz',        pos: 'CF / CAM', dob: '11 Jun 1999',  nat: 'Germany',     dob: '11 Jun 1999', fee: '€75.0m',    salary: '€324,372',  yrs: 3, annual: '€19,879,369', img: KAI_IMG },
-  { num: 9,  name: 'Gabriel Jesus',      pos: 'CF', dob: '3 Apr 1997',         nat: 'Brazil',      dob: '3 Apr 1997',  fee: '€52.2m',    salary: '€306,995',  yrs: 2, annual: '€19,954,670' , img: JESUS_IMG },
-  { num: 2,  name: 'William Saliba',     pos: 'CB', dob: '24 Mar 2001',         nat: 'France',      dob: '24 Mar 2001', fee: '€30.0m',    salary: '€289,618',  yrs: 5, annual: '€17,319,147', img: SALIBA_IMG },
-  { num: 8,  name: 'Martin Ødegaard',    pos: 'CAM', dob: '17 Dec 1998',        nat: 'Norway',      dob: '17 Dec 1998', fee: '€35.0m',    salary: '€278,033',  yrs: 3, annual: '€18,072,154', img: ODEGAARD_IMG },
-  { num: 41, name: 'Declan Rice',        pos: 'DM / CM', dob: '14 Jan 1999',    nat: 'England',     dob: '14 Jan 1999', fee: '€116.6m',   salary: '€278,033',  yrs: 3, annual: '€18,072,154', img: DECLAN_IMG },
-  { num: 14, name: 'Viktor Gyökeres',    pos: 'CF', dob: '4 Jun 1998',         nat: 'Sweden',      dob: '4 Jun 1998',  fee: '€66.9m',    salary: '€231,694',  yrs: 5, annual: '€15,060,128' , img: GYOK_IMG },
-  { num: 7,  name: 'Bukayo Saka',        pos: 'RW', dob: '5 Sep 2001',         nat: 'England',     dob: '5 Sep 2001',  fee: 'Academy',   salary: '€225,902',  yrs: 2, annual: '€17,770,951' , img: SAKA_IMG },
-  { num: 10, name: 'Eberechi Eze',       pos: 'CAM / RW', dob: '29 Jun 1998',   nat: 'England',     dob: '29 Jun 1998', fee: '€69.3m',    salary: '€208,525',  yrs: 4, annual: '€13,554,115', img: EZE_IMG },
-  { num: 11, name: 'Gabriel Martinelli', pos: 'LW', dob: '18 Jun 2001',         nat: 'Brazil',      dob: '18 Jun 2001', fee: '€7.1m',     salary: '€208,525',  yrs: 2, annual: '€13,554,115', img: MARTINELLI_IMG },
-  { num: 19, name: 'Leandro Trossard',   pos: 'LW / RW', dob: '4 Dec 1994',    nat: 'Belgium',     dob: '4 Dec 1994',  fee: '€24.0m',    salary: '€208,525',  yrs: 2, annual: '€13,554,115' , img: TROSSARD_IMG },
-  { num: 4,  name: 'Ben White',          pos: 'RB', dob: '8 Oct 1997',         nat: 'England',     dob: '8 Oct 1997',  fee: '€58.5m',    salary: '€173,771',  yrs: 3, annual: '€11,295,096' , img: BEN_WHITE_IMG },
-  { num: 6,  name: 'Gabriel Magalhães',  pos: 'CB', dob: '19 Dec 1997',         nat: 'Brazil',      dob: '19 Dec 1997', fee: '€26.0m',    salary: '€173,771',  yrs: 4, annual: '€12,048,103' , img: GABRIEL_M_IMG },
-  { num: 20, name: 'Noni Madueke',       pos: 'RW', dob: '10 Mar 2002',         nat: 'England',     dob: '10 Mar 2002', fee: '€56.0m',    salary: '€173,771',  yrs: 5, annual: '€11,295,096', img: NONI_IMG },
-  { num: 23, name: 'Mikel Merino',       pos: 'CM', dob: '22 Jun 1996',         nat: 'Spain',       dob: '22 Jun 1996', fee: '€32.0m',    salary: '€150,601',  yrs: 3, annual: '€9,789,084'  , img: MERINO_IMG },
-  { num: 33, name: 'Riccardo Calafiori', pos: 'LB / CB', dob: '19 May 2002',    nat: 'Italy',       dob: '19 May 2002', fee: '€45.0m',    salary: '€139,017',  yrs: 4, annual: '€9,036,076', img: CALAFIORI_IMG },
-  { num: 1,  name: 'David Raya',         pos: 'GK', dob: '15 Sep 1995',         nat: 'Spain',       dob: '15 Sep 1995', fee: '€31.9m',    salary: '€115,847',  yrs: 3, annual: '€7,530,064', img: RAYA_IMG },
-  { num: 12, name: 'Jurriën Timber',     pos: 'RB / CB', dob: '17 Jun 2001',    nat: 'Netherlands', dob: '17 Jun 2001', fee: '€40.0m',    salary: '€104,262',  yrs: 3, annual: '€7,228,861'  , img: TIMBER_IMG },
-  { num: 36, name: 'Martín Zubimendi',   pos: 'DM', dob: '2 Feb 1999',         nat: 'Spain',       dob: '2 Feb 1999',  fee: '€70.0m',    salary: '€86,885',   yrs: 5, annual: '€5,647,548', img: ZUBI_IMG },
-  { num: 16, name: 'Christian Nørgaard', pos: 'CM / DM', dob: '10 Mar 1994',    nat: 'Denmark',     dob: '10 Mar 1994', fee: '€11.6m',    salary: '€75,301',   yrs: 2, annual: '€4,894,541'  , img: NORGAARD_IMG },
-  { num: 5,  name: 'Piero Hincapié',     pos: 'LB', dob: '9 Jan 2002',         nat: 'Ecuador',     dob: '9 Jan 2002',  fee: 'Loan',      salary: '€75,301',   yrs: 1, annual: '€4,894,541'  , img: HINCAPIE_IMG },
-  { num: 13, name: 'Kepa Arrizabalaga',  pos: 'GK', dob: '3 Oct 1994',         nat: 'Spain',       dob: '3 Oct 1994',  fee: '€5.8m',     salary: '€69,508',   yrs: 3, annual: '€4,518,039'  , img: KEPA_IMG },
-  { num: 3,  name: 'Cristhian Mosquera', pos: 'CB', dob: '19 Apr 2003',         nat: 'Spain',       dob: '19 Apr 2003', fee: '€15.0m',    salary: '€63,716',   yrs: 5, annual: '€4,141,535'  , img: MOSQUERA_IMG },
-  { num: 49, name: 'Myles Lewis-Skelly', pos: 'LB', dob: '24 Sep 2006',         nat: 'England',     dob: '24 Sep 2006', fee: 'Academy',   salary: '€52,131',   yrs: 5, annual: '€3,388,529'  , img: MLS_IMG },
-  { num: null, name: 'Ethan Nwaneri',    pos: 'CAM / RW', dob: '21 Mar 2007',   nat: 'England',     dob: '21 Mar 2007', fee: 'Academy',   salary: '€46,339',   yrs: 5, annual: '€3,012,025'  , img: NWANERI_IMG },
-  { num: 56, name: 'Max Dowman',         pos: 'RW / CAM', dob: '31 Dec 2009',   nat: 'England',     dob: '31 Dec 2009', fee: 'Academy',   salary: '€40,547',   yrs: 1, annual: '€2,635,522'   },
-];
+let PLAYERS = [];      // populated by loadData()
+let FIN_PLAYERS = [];   // populated by loadData()
+let FORMATION = [];     // populated by loadData()
+
+// ── Data formatting helpers ───────────────────────────────────────────────
+function fmtPW(raw)  { return raw ? '€' + Math.round(raw / 1000) + 'k' : '—'; }
+function fmtPY(raw)  { return raw ? '€' + (raw / 1e6).toFixed(1) + 'm' : '—'; }
+function fmtFee(type, raw) {
+  if (type === 'Transfer' && raw) return '€' + parseFloat(raw).toFixed(1) + 'm';
+  return type || '—';
+}
+function isoToDob(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getUTCDate() + ' ' + months[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+}
+function calcContractYrs(expiration) {
+  if (!expiration) return null;
+  const days = (new Date(expiration) - new Date()) / (1000 * 60 * 60 * 24);
+  return Math.max(0, Math.ceil(days / 365.25));
+}
+function calcAmortRaw(type, feeRaw, yearSigned) {
+  const yr = new Date().getFullYear();
+  if (type !== 'Transfer' || !feeRaw || !yearSigned) return 0;
+  return (yr - yearSigned) < 5 ? Math.round(feeRaw * 1e6 / 5) : 0;
+}
+async function loadData() {
+  const grid = document.getElementById('grid');
+  if (grid) grid.innerHTML = '<div style="padding:32px;text-align:center;color:#555">Loading squad…</div>';
+  try {
+    const [playersRes, formationRes] = await Promise.all([
+      fetch('/api/players?active=eq.true&order=salary_py_raw.desc.nullslast'),
+      fetch('/api/formation_slots?order=row_order.asc,slot_order.asc'),
+    ]);
+    const apiPlayers = await playersRes.json();
+    const apiSlots   = await formationRes.json();
+
+    PLAYERS = apiPlayers.map(p => ({
+      ...p,
+      num:    p.squad_num,
+      nat:    p.nationality,
+      img:    p.img_url,
+      dob:    isoToDob(p.dob),
+      salary: fmtPW(p.salary_pw_raw),
+      annual: fmtPY(p.salary_py_raw),
+      fee:    fmtFee(p.transfer_type, p.transfer_fee_raw),
+      yrs:    calcContractYrs(p.expiration),
+    }));
+
+    FIN_PLAYERS = PLAYERS.map(p => {
+      const amortRaw = calcAmortRaw(p.transfer_type, p.transfer_fee_raw, p.year_signed);
+      const fullCostRaw = (p.salary_py_raw || 0) + amortRaw;
+      return {
+        num:         p.squad_num,
+        name:        p.name,
+        pos:         p.pos_group,
+        dob:         p.dob,
+        yrs:         calcContractYrs(p.expiration),
+        salaryPW:    fmtPW(p.salary_pw_raw),
+        salaryPY:    fmtPY(p.salary_py_raw),
+        fee:         fmtFee(p.transfer_type, p.transfer_fee_raw),
+        amort:       amortRaw > 0 ? '€' + (p.transfer_fee_raw / 5).toFixed(1) + 'm' : '—',
+        salaryPWRaw: p.salary_pw_raw || 0,
+        salaryPYRaw: p.salary_py_raw || 0,
+        feeRaw:      p.transfer_fee_raw || 0,
+        amortRaw,
+        fullCostRaw,
+        fullCost:    '€' + (fullCostRaw / 1e6).toFixed(1) + 'm',
+      };
+    });
+
+    // Convert flat slots to nested FORMATION structure
+    const rowMap = {};
+    apiSlots.forEach(s => {
+      if (!rowMap[s.row_name]) rowMap[s.row_name] = { row: s.row_name, order: s.row_order, slots: [] };
+      rowMap[s.row_name].slots.push({ pos: s.pos, players: s.player_names || [] });
+    });
+    FORMATION = Object.values(rowMap).sort((a, b) => a.order - b.order);
+
+    loadData();
+    renderFinTable();
+  } catch (err) {
+    console.error('loadData failed:', err);
+    if (grid) grid.innerHTML = '<div style="padding:32px;text-align:center;color:#e74c3c">Failed to load data. Check connection.</div>';
+  }
+}
 
 const personIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
 
@@ -1660,8 +1720,9 @@ function openDetail(p) {
     </div>
     <div class="stat-cell">
       <div class="stat-label">Transfer Date</div>
-      <div class="stat-value" style="color:var(--muted)">—</div>
+      <div class="stat-value" style="color:var(--muted)">${p.transfer_date || '—'}</div>
     </div>
+    ${p.fbref_url ? `<div class="stat-cell" style="grid-column:1/-1"><a href="${p.fbref_url}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-size:14px">View on FBref ↗</a></div>` : ''}
   `;
 
   document.getElementById('detailPanel').classList.add('open');
@@ -1722,11 +1783,11 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     );
 
     if (activeSort === 'salary') {
-      list = [...list].sort((a, b) => parseSalary(b.salary) - parseSalary(a.salary));
+      list = [...list].sort((a, b) => (b.salary_pw_raw || 0) - (a.salary_pw_raw || 0));
     } else if (activeSort === 'age') {
       list = [...list].sort((a, b) => parseAge(b.dob) - parseAge(a.dob)); // oldest first
     } else if (activeSort === 'fee') {
-      list = [...list].sort((a, b) => parseFee(b.fee) - parseFee(a.fee));
+      list = [...list].sort((a, b) => (b.transfer_fee_raw || 0) - (a.transfer_fee_raw || 0));
     }
 
     list.forEach((p, i) => grid.appendChild(buildCard(p, i)));
@@ -1758,38 +1819,6 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     });
   });
 
-
-  // ── Financials data ───────────────────────────────────────────────────
-  const FIN_PLAYERS = [
-    { num: 29, name: 'Kai Havertz',         pos: 'Forward', dob: '11 Jun 1999', yrs: 3,    salaryPW: '€324k',  salaryPY: '€16.9m', fee: '€75.0m',   amort: '€15.0m', salaryPWRaw: 324372,  salaryPYRaw: 16867343, feeRaw: 75.00,  amortRaw: 15000000 },
-    { num: 9,  name: 'Gabriel Jesus',        pos: 'Forward', dob: '3 Apr 1997', yrs: 2,    salaryPW: '€307k',  salaryPY: '€16.0m', fee: '€52.2m',   amort: '€10.4m', salaryPWRaw: 306995,  salaryPYRaw: 15963736, feeRaw: 52.20,  amortRaw: 10440000 },
-    { num: 2,  name: 'William Saliba',       pos: 'Defender', dob: '24 Mar 2001', yrs: 5,   salaryPW: '€290k',  salaryPY: '€15.1m', fee: '€30.0m',   amort: '—',      salaryPWRaw: 289618,  salaryPYRaw: 15060128, feeRaw: 30.00,  amortRaw: 0 },
-    { num: 8,  name: 'Martin Ødegaard',      pos: 'Midfielder', dob: '17 Dec 1998', yrs: 3, salaryPW: '€278k',  salaryPY: '€14.5m', fee: '€35.0m',   amort: '€7.0m',  salaryPWRaw: 278033,  salaryPYRaw: 14457723, feeRaw: 35.00,  amortRaw: 7000000 },
-    { num: 41, name: 'Declan Rice',          pos: 'Midfielder', dob: '14 Jan 1999', yrs: 3, salaryPW: '€278k',  salaryPY: '€14.5m', fee: '€116.6m',  amort: '€23.3m', salaryPWRaw: 278033,  salaryPYRaw: 14457723, feeRaw: 116.60, amortRaw: 23320000 },
-    { num: 14, name: 'Viktor Gyökeres',      pos: 'Forward', dob: '4 Jun 1998', yrs: 5,    salaryPW: '€232k',  salaryPY: '€12.0m', fee: '€66.9m',   amort: '€13.4m', salaryPWRaw: 231694,  salaryPYRaw: 12048102, feeRaw: 66.90,  amortRaw: 13380000 },
-    { num: 7,  name: 'Bukayo Saka',          pos: 'Forward', dob: '5 Sep 2001', yrs: 2,    salaryPW: '€226k',  salaryPY: '€11.7m', fee: 'Academy',  amort: '—',      salaryPWRaw: 225902,  salaryPYRaw: 11746900, feeRaw: 0,      amortRaw: 0 },
-    { num: 10, name: 'Eberechi Eze',         pos: 'Midfielder', dob: '29 Jun 1998', yrs: 4, salaryPW: '€209k',  salaryPY: '€10.8m', fee: '€69.3m',   amort: '€13.9m', salaryPWRaw: 208525,  salaryPYRaw: 10843292, feeRaw: 69.30,  amortRaw: 13860000 },
-    { num: 11, name: 'Gabriel Martinelli',   pos: 'Forward', dob: '18 Jun 2001', yrs: 2,    salaryPW: '€209k',  salaryPY: '€10.8m', fee: '€7.1m',    amort: '—',      salaryPWRaw: 208525,  salaryPYRaw: 10843292, feeRaw: 7.10,   amortRaw: 0 },
-    { num: 19, name: 'Leandro Trossard',     pos: 'Forward', dob: '4 Dec 1994', yrs: 2,    salaryPW: '€209k',  salaryPY: '€10.8m', fee: '€24.0m',   amort: '€4.8m',  salaryPWRaw: 208525,  salaryPYRaw: 10843292, feeRaw: 24.00,  amortRaw: 4800000 },
-    { num: 4,  name: 'Ben White',            pos: 'Defender', dob: '8 Oct 1997', yrs: 3,   salaryPW: '€174k',  salaryPY: '€9.0m',  fee: '€58.5m',   amort: '€11.7m', salaryPWRaw: 173771,  salaryPYRaw: 9036077,  feeRaw: 58.50,  amortRaw: 11700000 },
-    { num: 6,  name: 'Gabriel Magalhães',    pos: 'Defender', dob: '19 Dec 1997', yrs: 4,   salaryPW: '€174k',  salaryPY: '€9.0m',  fee: '€26.0m',   amort: '—',      salaryPWRaw: 173771,  salaryPYRaw: 9036077,  feeRaw: 26.00,  amortRaw: 0 },
-    { num: 20, name: 'Noni Madueke',         pos: 'Forward', dob: '10 Mar 2002', yrs: 5,    salaryPW: '€174k',  salaryPY: '€9.0m',  fee: '€56.0m',   amort: '€11.2m', salaryPWRaw: 173771,  salaryPYRaw: 9036077,  feeRaw: 56.00,  amortRaw: 11200000 },
-    { num: 23, name: 'Mikel Merino',         pos: 'Midfielder', dob: '22 Jun 1996', yrs: 3, salaryPW: '€151k',  salaryPY: '€7.8m',  fee: '€32.0m',   amort: '€6.4m',  salaryPWRaw: 150601,  salaryPYRaw: 7831267,  feeRaw: 32.00,  amortRaw: 6400000 },
-    { num: 33, name: 'Riccardo Calafiori',   pos: 'Defender', dob: '19 May 2002', yrs: 4,   salaryPW: '€139k',  salaryPY: '€7.2m',  fee: '€45.0m',   amort: '€9.0m',  salaryPWRaw: 139017,  salaryPYRaw: 7228861,  feeRaw: 45.00,  amortRaw: 9000000 },
-    { num: 1,  name: 'David Raya',           pos: 'Goalkeeper', dob: '15 Sep 1995', yrs: 3, salaryPW: '€116k',  salaryPY: '€6.0m',  fee: '€31.9m',   amort: '€6.4m',  salaryPWRaw: 115847,  salaryPYRaw: 6024051,  feeRaw: 31.90,  amortRaw: 6380000 },
-    { num: 12, name: 'Jurriën Timber',       pos: 'Defender', dob: '17 Jun 2001', yrs: 3,   salaryPW: '€104k',  salaryPY: '€5.4m',  fee: '€40.0m',   amort: '€8.0m',  salaryPWRaw: 104262,  salaryPYRaw: 5421646,  feeRaw: 40.00,  amortRaw: 8000000 },
-    { num: 36, name: 'Martín Zubimendi',     pos: 'Midfielder', dob: '2 Feb 1999', yrs: 5, salaryPW: '€87k',   salaryPY: '€4.5m',  fee: '€70.0m',   amort: '€14.0m', salaryPWRaw: 86885,   salaryPYRaw: 4518038,  feeRaw: 70.00,  amortRaw: 14000000 },
-    { num: 16, name: 'Christian Nørgaard',   pos: 'Midfielder', dob: '10 Mar 1994', yrs: 1, salaryPW: '€75k',   salaryPY: '€3.9m',  fee: '€11.6m',   amort: '€2.3m',  salaryPWRaw: 75301,   salaryPYRaw: 3915633,  feeRaw: 11.60,  amortRaw: 2320000 },
-    { num: 5,  name: 'Piero Hincapié',       pos: 'Defender', dob: '9 Jan 2002', yrs: 3,   salaryPW: '€75k',   salaryPY: '€3.9m',  fee: 'Loan',     amort: '—',      salaryPWRaw: 75301,   salaryPYRaw: 3915633,  feeRaw: 0,      amortRaw: 0 },
-    { num: 13, name: 'Kepa Arrizabalaga',    pos: 'Goalkeeper', dob: '3 Oct 1994', yrs: 1, salaryPW: '€70k',   salaryPY: '€3.6m',  fee: '€5.8m',    amort: '€1.2m',  salaryPWRaw: 69508,   salaryPYRaw: 3614431,  feeRaw: 5.80,   amortRaw: 1160000 },
-    { num: 3,  name: 'Cristhian Mosquera',   pos: 'Defender', dob: '19 Apr 2003', yrs: 4,   salaryPW: '€64k',   salaryPY: '€3.3m',  fee: '€15.0m',   amort: '€3.0m',  salaryPWRaw: 63716,   salaryPYRaw: 3313228,  feeRaw: 15.00,  amortRaw: 3000000 },
-    { num: 49, name: 'Myles Lewis-Skelly',   pos: 'Defender', dob: '24 Sep 2006', yrs: 3,   salaryPW: '€52k',   salaryPY: '€2.7m',  fee: 'Academy',  amort: '—',      salaryPWRaw: 52131,   salaryPYRaw: 2710823,  feeRaw: 0,      amortRaw: 0 },
-    { num: 22, name: 'Ethan Nwaneri',        pos: 'Midfielder', dob: '21 Mar 2007', yrs: 3, salaryPW: '€46k',   salaryPY: '€2.4m',  fee: 'Academy',  amort: '—',      salaryPWRaw: 46339,   salaryPYRaw: 2409620,  feeRaw: 0,      amortRaw: 0 },
-    { num: 56, name: 'Max Dowman',           pos: 'Forward', dob: '31 Dec 2009', yrs: 3,    salaryPW: '€41k',   salaryPY: '€2.1m',  fee: 'Academy',  amort: '—',      salaryPWRaw: 40547,   salaryPYRaw: 2108418,  feeRaw: 0,      amortRaw: 0 },
-  ].map(p => {
-    const raw = p.salaryPYRaw + p.amortRaw;
-    return { ...p, fullCostRaw: raw, fullCost: '€' + (raw / 1e6).toFixed(1) + 'm' };
-  });
 
   // ── Financials table sort state ────────────────────────────────────────
   let finSort = { col: 'name', dir: 1 };
@@ -1857,42 +1886,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
   // ── Page navigation ───────────────────────────────────────────────────
   const depthPage = document.getElementById('depthPage');
 
-  // 4-3-3 depth chart data — from Formation spreadsheet tab
-  const FORMATION = [
-    {
-      row: 'Attack',
-      slots: [
-        { pos: 'LW',  players: ['Martinelli', 'Trossard', '(Eze)'] },
-        { pos: 'CF',  players: ['Gyökeres',   'Havertz',  'Jesus'] },
-        { pos: 'RW',  players: ['Saka',       'Madueke',  'Dowman'] },
-      ]
-    },
-    {
-      row: 'Midfield',
-      slots: [
-        { pos: 'LCM', players: ['Rice',       'Merino'] },
-        { pos: 'DCM', players: ['Zubimendi',  'Nørgaard'] },
-        { pos: 'RCM', players: ['Ødegaard',   'Eze'] },
-      ]
-    },
-    {
-      row: 'Defence',
-      slots: [
-        { pos: 'LB',  players: ['Hincapié',   'Calafiori',    'Lewis-Skelly'] },
-        { pos: 'LCB', players: ['Magalhães',  '(Hincapié)'] },
-        { pos: 'RCB', players: ['Saliba',     'Mosquera'] },
-        { pos: 'RB',  players: ['Timber',     'White',        '(Mosquera)'] },
-      ]
-    },
-    {
-      row: 'Goalkeeper',
-      slots: [
-        { pos: 'GK',  players: ['Raya', 'Arrizabalaga'] },
-      ]
-    },
-  ];
-
-  function renderDepthChart() {
+    function renderDepthChart() {
     const pitch = document.getElementById('dcPitch');
     if (!pitch) return;
     pitch.innerHTML = '';
