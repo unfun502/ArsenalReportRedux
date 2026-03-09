@@ -2366,7 +2366,9 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
 
     const W = finViz.clientWidth || 860;
     const H = Math.max(380, Math.round(W * 0.48));
-    const M = { top: 20, right: 120, bottom: 52, left: 64 };
+    const M = W < 500
+      ? { top: 20, right: 45, bottom: 52, left: 48 }
+      : { top: 20, right: 120, bottom: 52, left: 64 };
     const iW = W - M.left - M.right;
     const iH = H - M.top - M.bottom;
 
