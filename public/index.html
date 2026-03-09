@@ -431,6 +431,10 @@
       transform: scale(0.72);
       margin-bottom: -28%;
     }
+    #btlPitch {
+      transform: none;
+      margin-bottom: 0;
+    }
   }
 
   @media (max-width: 480px) {
@@ -438,6 +442,158 @@
       transform: scale(0.55);
       margin-bottom: -46%;
     }
+    #btlPitch {
+      transform: none;
+      margin-bottom: 0;
+    }
+  }
+
+  /* ── "How the team was built" ──────────────────────────────────────── */
+  .dc-controls-row {
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: 14px;
+  }
+
+  .build-toggle-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    background: rgba(200,150,12,0.08);
+    border: 1px solid rgba(200,150,12,0.25);
+    border-radius: 5px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .build-toggle-btn:hover { background: rgba(200,150,12,0.15); border-color: rgba(200,150,12,0.5); }
+  .build-toggle-btn.active { background: rgba(200,150,12,0.18); }
+
+  .btl-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .btl-ctrl-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 5px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btl-ctrl-btn:hover { background: rgba(255,255,255,0.1); }
+
+  .btl-year-display {
+    flex: 1;
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 3px;
+    color: var(--text);
+    transition: opacity 0.25s;
+  }
+  .btl-year-display.fade { opacity: 0; }
+
+  .btl-layout {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .btl-list-wrap {
+    width: 155px;
+    flex-shrink: 0;
+  }
+  .btl-list-heading {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .btl-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .btl-card {
+    font-family: 'Barlow Condensed', sans-serif;
+    padding: 6px 10px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-left-width: 3px;
+    opacity: 0.4;
+    transition: opacity 0.2s, background 0.2s;
+  }
+  .btl-card.active { opacity: 1; background: rgba(255,255,255,0.08); }
+  .btl-card.done   { opacity: 0.18; }
+
+  .btl-card-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .btl-card-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .btl-pitch-wrap { flex: 1; min-width: 0; }
+
+  .dc-starter.empty {
+    background: transparent;
+    border: 1px dashed rgba(255,255,255,0.18);
+    color: transparent;
+    min-height: 28px;
+  }
+  .dc-backup.empty {
+    background: transparent;
+    border: 1px dashed rgba(255,255,255,0.1);
+    color: transparent;
+  }
+
+  @keyframes slot-pop {
+    0%   { transform: scale(0.75); }
+    55%  { transform: scale(1.12); }
+    100% { transform: scale(1.0); }
+  }
+  .slot-popping { animation: slot-pop 0.32s ease-out forwards; }
+
+  .btl-overflow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 24px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btl-done-msg {
+    text-align: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 0 2px;
+  }
+
+  @media (max-width: 600px) {
+    .btl-layout { flex-direction: column; }
+    .btl-list-wrap { width: 100%; }
+    .btl-list { flex-direction: row; flex-wrap: wrap; }
+    .btl-card { min-width: 110px; flex: 1; }
   }
 
   /* ── Notes page ──────────────────────────────────────────────────── */
@@ -1477,7 +1633,26 @@
 
 <div id="depthPage">
   <div class="dc-wrap">
+    <div class="dc-controls-row">
+      <button id="buildBtn" class="build-toggle-btn">How the team was built</button>
+    </div>
     <div class="dc-pitch" id="dcPitch"></div>
+    <div id="btlView" style="display:none">
+      <div class="btl-controls">
+        <button id="btlRewind" class="btl-ctrl-btn">&#9664; Rewind</button>
+        <div class="btl-year-display" id="btlYear">—</div>
+        <button id="btlPlayPause" class="btl-ctrl-btn">&#8741; Pause</button>
+      </div>
+      <div class="btl-layout">
+        <div class="btl-list-wrap">
+          <div class="btl-list-heading">Arrivals</div>
+          <div class="btl-list" id="btlList"></div>
+        </div>
+        <div class="btl-pitch-wrap">
+          <div class="dc-pitch" id="btlPitch"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1960,6 +2135,290 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
       pitch.appendChild(row);
     });
   }
+
+  // ── "How the team was built" animation ──────────────────────────────────
+
+  function getTransferYear(p) {
+    if (p.transfer_type === 'Academy') return p.year_signed;
+    if (p.transfer_date) {
+      const parts = p.transfer_date.trim().split(/\s+/);
+      const yr = parseInt(parts[parts.length - 1]);
+      if (!isNaN(yr)) return yr;
+    }
+    return p.year_signed;
+  }
+
+  function calcAgeAtTransfer(dobStr, year) {
+    if (!dobStr || !year) return '?';
+    // dobStr is formatted "14 Jan 1999" in PLAYERS
+    const birthYear = parseInt(dobStr.trim().split(/\s+/).pop());
+    return isNaN(birthYear) ? '?' : year - birthYear;
+  }
+
+  let btlState = null;
+  let btlSlotLookup = {};
+
+  function renderBuildTimeline() {
+    const yearGroups = {};
+    PLAYERS.forEach(p => {
+      const yr = getTransferYear(p);
+      if (!yr) return;
+      if (!yearGroups[yr]) yearGroups[yr] = [];
+      yearGroups[yr].push(p);
+    });
+    const sortedYears = Object.keys(yearGroups).map(Number).sort((a, b) => a - b);
+
+    btlState = { yearGroups, sortedYears, yearIdx: 0, stepIdx: 0, playing: true, timer: null, finished: false };
+
+    btlRenderEmptyPitch();
+    btlSlotLookup = btlBuildSlotLookup();
+    document.getElementById('btlPlayPause').textContent = '\u2016 Pause';
+    btlStartYear(0);
+  }
+
+  function btlRenderEmptyPitch() {
+    const pitch = document.getElementById('btlPitch');
+    pitch.innerHTML = '';
+
+    const colLines = document.createElement('div');
+    colLines.className = 'dc-col-lines';
+    for (let i = 0; i < 4; i++) {
+      const cl = document.createElement('div');
+      cl.className = 'dc-col-line';
+      colLines.appendChild(cl);
+    }
+    pitch.appendChild(colLines);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'dc-formation-label';
+    lbl.textContent = '4 \u2013 3 \u2013 3';
+    pitch.appendChild(lbl);
+
+    FORMATION.forEach(({ row: rowLabel, slots }) => {
+      const row = document.createElement('div');
+      row.className = 'dc-row';
+      if (rowLabel === 'Attack') row.classList.add('dc-row--attack');
+
+      slots.forEach(({ pos, players }) => {
+        const slot = document.createElement('div');
+        slot.className = 'dc-slot';
+        if (pos === 'DCM') slot.classList.add('dc-slot--dcm');
+
+        const posLabel = document.createElement('div');
+        posLabel.className = 'dc-pos-label';
+        posLabel.textContent = pos;
+        slot.appendChild(posLabel);
+
+        const starter = document.createElement('div');
+        starter.className = 'dc-starter empty';
+        starter.textContent = '\u00a0';
+        starter.dataset.slotFor = players[0] || '';
+        slot.appendChild(starter);
+
+        if (players.length > 1) {
+          const depth = document.createElement('div');
+          depth.className = 'dc-depth';
+          players.slice(1).forEach(name => {
+            const b = document.createElement('div');
+            b.className = 'dc-backup empty';
+            b.textContent = '\u00a0';
+            b.dataset.slotFor = name;
+            depth.appendChild(b);
+          });
+          slot.appendChild(depth);
+        }
+        row.appendChild(slot);
+      });
+      pitch.appendChild(row);
+    });
+
+    const overflow = document.createElement('div');
+    overflow.id = 'btlOverflow';
+    overflow.className = 'btl-overflow';
+    pitch.appendChild(overflow);
+  }
+
+  function btlBuildSlotLookup() {
+    const lookup = {};
+    document.getElementById('btlPitch').querySelectorAll('[data-slot-for]').forEach(el => {
+      const name = el.dataset.slotFor;
+      if (name) lookup[name] = el;
+    });
+    return lookup;
+  }
+
+  function btlStartYear(yearIdx) {
+    if (!btlState || yearIdx >= btlState.sortedYears.length) { btlFinished(); return; }
+    btlState.yearIdx = yearIdx;
+    btlState.stepIdx = 0;
+
+    const year = btlState.sortedYears[yearIdx];
+    const players = btlState.yearGroups[year];
+
+    // Fade year display
+    const yearEl = document.getElementById('btlYear');
+    yearEl.classList.add('fade');
+    setTimeout(() => { yearEl.textContent = year; yearEl.classList.remove('fade'); }, 220);
+
+    // Populate staging list
+    const list = document.getElementById('btlList');
+    list.innerHTML = '';
+    players.forEach((p, i) => {
+      const card = document.createElement('div');
+      card.className = 'btl-card';
+      const posColor = (typeof POS_COLORS !== 'undefined' && POS_COLORS[p.pos_group]) || '#888';
+      card.style.borderLeftColor = posColor;
+      card.dataset.playerIdx = i;
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'btl-card-name';
+      nameEl.textContent = p.name.split(' ').pop();
+
+      const metaEl = document.createElement('div');
+      metaEl.className = 'btl-card-meta';
+      const fee = (p.transfer_type === 'Transfer' && p.transfer_fee_raw)
+        ? '\u20ac' + parseFloat(p.transfer_fee_raw).toFixed(1) + 'm'
+        : (p.transfer_type || '\u2014');
+      const age = calcAgeAtTransfer(p.dob, year);
+      metaEl.textContent = fee + ' \u00b7 age ' + age;
+
+      card.appendChild(nameEl);
+      card.appendChild(metaEl);
+      list.appendChild(card);
+    });
+
+    if (btlState.playing) btlState.timer = setTimeout(btlStep, 700);
+  }
+
+  function btlStep() {
+    if (!btlState || !btlState.playing) return;
+    const year = btlState.sortedYears[btlState.yearIdx];
+    const players = btlState.yearGroups[year];
+
+    if (btlState.stepIdx >= players.length) {
+      btlState.timer = setTimeout(() => btlStartYear(btlState.yearIdx + 1), 900);
+      return;
+    }
+
+    const p = players[btlState.stepIdx];
+    const cards = document.querySelectorAll('#btlList .btl-card');
+    const cardEl = cards[btlState.stepIdx];
+    if (cardEl) cardEl.classList.add('active');
+
+    const lastName = p.name.split(' ').pop();
+    const targetEl = btlSlotLookup[lastName];
+
+    const doNext = () => {
+      if (cardEl) { cardEl.classList.remove('active'); cardEl.classList.add('done'); }
+      btlState.stepIdx++;
+      if (btlState.playing) btlState.timer = setTimeout(btlStep, 520);
+    };
+
+    const posColor = (typeof POS_COLORS !== 'undefined' && POS_COLORS[p.pos_group]) || '#888';
+
+    if (targetEl && cardEl) {
+      flyToSlot(cardEl, targetEl, lastName, posColor, () => {
+        btlFillSlot(lastName, targetEl);
+        doNext();
+      });
+    } else {
+      const overflow = document.getElementById('btlOverflow');
+      if (overflow && cardEl) {
+        flyToSlot(cardEl, overflow, lastName, posColor, () => {
+          const chip = document.createElement('div');
+          chip.className = 'dc-backup';
+          chip.textContent = lastName;
+          overflow.appendChild(chip);
+          doNext();
+        });
+      } else {
+        doNext();
+      }
+    }
+  }
+
+  function flyToSlot(fromEl, toEl, label, color, onDone) {
+    const from = fromEl.getBoundingClientRect();
+    const to   = toEl.getBoundingClientRect();
+
+    const clone = document.createElement('div');
+    clone.textContent = label;
+    clone.style.cssText = [
+      'position:fixed',
+      'left:' + from.left + 'px',
+      'top:' + (from.top + from.height / 2 - 12) + 'px',
+      'margin:0', 'z-index:999',
+      'font-family:Barlow Condensed,sans-serif',
+      'font-size:12px', 'font-weight:700',
+      'color:#fff',
+      'background:' + color,
+      'border-radius:4px',
+      'padding:3px 9px',
+      'pointer-events:none',
+      'white-space:nowrap',
+      'transition:transform 0.48s cubic-bezier(0.25,0.8,0.25,1),opacity 0.48s',
+    ].join(';');
+    document.body.appendChild(clone);
+
+    const tx = (to.left + to.width / 2) - (from.left + from.width / 2);
+    const ty = (to.top + to.height / 2) - (from.top + from.height / 2) - 12;
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      clone.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(0.55)';
+      clone.style.opacity = '0';
+    }));
+
+    clone.addEventListener('transitionend', () => { clone.remove(); onDone(); }, { once: true });
+  }
+
+  function btlFillSlot(lastName, slotEl) {
+    slotEl.textContent = lastName;
+    slotEl.classList.remove('empty');
+    slotEl.classList.add('slot-popping');
+    slotEl.addEventListener('animationend', () => slotEl.classList.remove('slot-popping'), { once: true });
+  }
+
+  function btlFinished() {
+    if (btlState) { btlState.playing = false; btlState.finished = true; }
+    const yearEl = document.getElementById('btlYear');
+    if (yearEl) yearEl.textContent = 'Done';
+    const list = document.getElementById('btlList');
+    if (list) {
+      const msg = document.createElement('div');
+      msg.className = 'btl-done-msg';
+      msg.textContent = 'Squad assembled';
+      list.appendChild(msg);
+    }
+    const btn = document.getElementById('btlPlayPause');
+    if (btn) btn.textContent = '\u25b6 Replay';
+  }
+
+  function btlRewind() {
+    if (!btlState) return;
+    clearTimeout(btlState.timer);
+    btlState.playing = true;
+    btlState.finished = false;
+    const btn = document.getElementById('btlPlayPause');
+    if (btn) btn.textContent = '\u2016 Pause';
+    btlRenderEmptyPitch();
+    btlSlotLookup = btlBuildSlotLookup();
+    btlStartYear(0);
+  }
+
+  function btlTogglePlay() {
+    if (!btlState) return;
+    const btn = document.getElementById('btlPlayPause');
+    if (btlState.finished) { btlRewind(); return; }
+    btlState.playing = !btlState.playing;
+    if (btlState.playing) {
+      if (btn) btn.textContent = '\u2016 Pause';
+      btlStep();
+    } else {
+      if (btn) btn.textContent = '\u25b6 Play';
+      clearTimeout(btlState.timer);
+    }
+  }
+
   const navTrigger  = document.getElementById('navTrigger');
   const navLabel    = document.getElementById('navLabel');
   const squadPage   = document.getElementById('squadPage');
@@ -1998,6 +2457,11 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
         notesPage.classList.add('visible');
       } else if (page === 'depth') {
         depthPage.classList.add('visible');
+        // Reset any running btl animation
+        if (btlState) { clearTimeout(btlState.timer); btlState = null; }
+        document.getElementById('btlView').style.display = 'none';
+        document.getElementById('dcPitch').style.display = '';
+        document.getElementById('buildBtn').classList.remove('active');
         document.getElementById('dcPitch').dataset.rendered = '';
         renderDepthChart();
       } else {
@@ -2540,6 +3004,20 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
 
   document.getElementById('btnData').addEventListener('click', () => setFinView('data'));
   document.getElementById('btnViz').addEventListener('click',  () => setFinView('viz'));
+
+  // ── Depth Chart: "How the team was built" toggle ──────────────────────
+  document.getElementById('buildBtn').addEventListener('click', () => {
+    const isActive = document.getElementById('buildBtn').classList.toggle('active');
+    document.getElementById('dcPitch').style.display  = isActive ? 'none' : '';
+    document.getElementById('btlView').style.display  = isActive ? ''     : 'none';
+    if (isActive) {
+      renderBuildTimeline();
+    } else {
+      if (btlState) { clearTimeout(btlState.timer); btlState = null; }
+    }
+  });
+  document.getElementById('btlRewind').addEventListener('click', btlRewind);
+  document.getElementById('btlPlayPause').addEventListener('click', btlTogglePlay);
 
   let _resizeTimer, _lastFinVizWidth = 0;
   window.addEventListener('resize', () => {
