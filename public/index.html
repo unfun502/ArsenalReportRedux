@@ -2532,18 +2532,24 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     if (view !== 'viz' && viz._cleanup) { viz._cleanup(); viz._cleanup = null; }
     document.getElementById('finTableWrap').style.display = view === 'data' ? '' : 'none';
     document.getElementById('finViz').style.display = view === 'viz' ? 'block' : 'none';
-    if (view === 'viz') loadD3(() => { renderTreemap(); renderScatter(); });
+    if (view === 'viz') loadD3(() => { _lastFinVizWidth = document.getElementById('finViz').clientWidth; renderTreemap(); renderScatter(); });
     if (view === 'data') renderFinTable();
   }
 
   document.getElementById('btnData').addEventListener('click', () => setFinView('data'));
   document.getElementById('btnViz').addEventListener('click',  () => setFinView('viz'));
 
-  let _resizeTimer;
+  let _resizeTimer, _lastFinVizWidth = 0;
   window.addEventListener('resize', () => {
     clearTimeout(_resizeTimer);
     _resizeTimer = setTimeout(() => {
-      if (document.getElementById('finViz').style.display === 'block') {
+      const finViz = document.getElementById('finViz');
+      if (finViz.style.display !== 'block') return;
+      // Only re-render on width changes — iOS chrome hide/show only changes
+      // viewport height and must not trigger a re-render (causes scroll jumps)
+      const newWidth = finViz.clientWidth;
+      if (Math.abs(newWidth - _lastFinVizWidth) > 10) {
+        _lastFinVizWidth = newWidth;
         renderTreemap();
         renderScatter();
       }
