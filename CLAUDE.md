@@ -55,7 +55,18 @@ Local Admin (this laptop only)
 - `year_signed` — end-of-year convention (e.g. 2024 for Jul 2023 signing)
 - `active` — false for departed/sold players (anon role filters these out)
 
-## Admin Server
+## Admin Authentication
+
+This app uses **Clerk** for admin authentication (exception to the standard `VITE_ADMIN_JWT` pattern — plain HTML, no Vite build step). See `DEVLAB502-AUDIT-PROMPT-v2.md` for the full explanation.
+
+- Public admin UI lives at `/admin.html`
+- Admin user ID hardcoded in both `worker.js` (`ADMIN_USER_ID`) and `public/admin.html`
+- Clerk publishable key: `pk_test_bGVhcm5pbmctZ3JvdXBlci0yNS5jbGVyay5hY2NvdW50cy5kZXYk` (dev mode — safe to commit)
+- JWKS URL: `https://learning-grouper-25.clerk.accounts.dev/.well-known/jwks.json`
+- Worker verifies Clerk JWT for all `/api/admin/*` requests, then forwards to PostgREST using `env.ADMIN_JWT` (Worker secret)
+- Admin nav link in `index.html` visible only to the configured admin user ID
+
+## Local Admin Server
 - Run: `npm run admin` → starts Express at localhost:3001, opens browser
 - Requires: `admin/.env` with `POSTGREST_URL` and `ADMIN_JWT`
 - Template: `admin/.env.example` (never commit `admin/.env`)
@@ -67,8 +78,8 @@ Local Admin (this laptop only)
 - `npm run import-excel` — imports Excel fields into DB (fbref, dates, salary history)
 
 ## Environment Variables
-### Worker (no variables needed)
-Static site; all data fetched from public PostgREST endpoint via Worker proxy.
+### Worker secrets (set via `wrangler secret put`)
+- `ADMIN_JWT` — PostgREST `arsenal_admin` JWT; injected into `/api/admin/*` proxy requests
 
 ### Admin server (admin/.env — gitignored)
 - `POSTGREST_URL=https://api.devlab502.net/arsenal`

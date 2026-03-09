@@ -1467,6 +1467,10 @@
         <span class="notes-link-name">Amy Lawrence</span>
         <span class="notes-link-desc">Arsenal reporting for The Athletic</span>
       </a>
+      <a class="notes-link-row" href="https://swissramble.substack.com/" target="_blank">
+        <span class="notes-link-name">The Swiss Ramble</span>
+        <span class="notes-link-desc">Analysing the business of football</span>
+      </a>
     </div>
   </div>
 </div>
@@ -1684,7 +1688,7 @@ function openDetail(p) {
   identity.innerHTML = `
     <div class="detail-pos">${p.pos}</div>
     <div class="detail-name">${p.name}</div>
-    <div class="detail-squad">${p.num ? 'Squad #' + p.num : 'Squad # TBC'} · ${p.nat}</div>
+    <div class="detail-squad">${p.num ? 'Squad #' + p.num : 'Squad # TBC'} · ${p.nat}${p.fbref_url ? ` · <a href="${p.fbref_url}" target="_blank" rel="noopener noreferrer" style="color:inherit;font-size:inherit">View on FBref ↗</a>` : ''}</div>
   `;
   header.appendChild(identity);
 
@@ -1727,14 +1731,13 @@ function openDetail(p) {
       <div class="stat-value accent">${annualFmt}</div>
     </div>
     <div class="stat-cell">
+      <div class="stat-label">Transfer Date</div>
+      <div class="stat-value">${p.transfer_date || '—'}</div>
+    </div>
+    <div class="stat-cell">
       <div class="stat-label">Transfer Fee</div>
       <div class="stat-value accent">${p.fee}</div>
     </div>
-    <div class="stat-cell">
-      <div class="stat-label">Transfer Date</div>
-      <div class="stat-value" style="color:var(--muted)">${p.transfer_date || '—'}</div>
-    </div>
-    ${p.fbref_url ? `<div class="stat-cell" style="grid-column:1/-1"><a href="${p.fbref_url}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);font-size:14px">View on FBref ↗</a></div>` : ''}
   `;
 
   document.getElementById('detailPanel').classList.add('open');
@@ -2312,12 +2315,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
       chips.className = 'tl-chips';
 
       players.sort((a, b) => a.name.localeCompare(b.name)).forEach(p => {
-        const color = POS_COLORS[p.pos] || (
-          p.pos === 'Forward' ? POS_COLORS['Forward'] :
-          p.pos === 'Midfielder' ? POS_COLORS['Midfielder'] :
-          p.pos === 'Defender' ? POS_COLORS['Defender'] :
-          p.pos === 'Goalkeeper' ? POS_COLORS['Goalkeeper'] : '#555'
-        );
+        const color = tmGroupMode === 'age' ? (AGE_COLORS[getAgeGroup(p.dob)] || '#555') : (POS_COLORS[p.pos] || '#555');
         const chip = document.createElement('div');
         chip.className = 'tl-chip';
         chip.style.setProperty('--chip-color', color);
@@ -2427,21 +2425,19 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
       .attr('class','sc-dot').attr('transform', d=>`translate(${x(d.age)},${y(d.fullCostRaw)})`).style('cursor','pointer');
 
     dots.append('circle').attr('r', R)
-      .attr('fill', d => POS_COLORS[d.pos] || '#555')
+      .attr('fill', d => tmGroupMode === 'age' ? (AGE_COLORS[getAgeGroup(d.dob)] || '#555') : (POS_COLORS[d.pos] || '#555'))
       .attr('fill-opacity', 0.85).attr('stroke','#111').attr('stroke-width',1.5);
 
-    // --- Labels for top 3 earners only ---
-    const TOP_N = 3;
+    // --- Labels for selected players ---
     const LABEL_H = 13, LABEL_PAD = 4;
-    const sorted = [...data].sort((a, b) => b.fullCostRaw - a.fullCostRaw);
-    const topNames = new Set(sorted.slice(0, TOP_N).map(d => d.name));
-    const labelData = data.filter(d => topNames.has(d.name)).map(d => {
+    const labelNames = new Set(['Declan Rice', 'Kai Havertz', 'Gabriel Jesus', 'Noni Madueke', 'Leandro Trossard']);
+    const labelData = data.filter(d => labelNames.has(d.name)).map(d => {
       const lname = d.name.split(' ').pop();
       const cx = x(d.age), cy = y(d.fullCostRaw);
       return { d, lname, cx, cy,
-               lx: cx + (cx > iW * 0.72 ? -(lname.length * 6 + LABEL_PAD) : R + LABEL_PAD),
+               lx: cx + R + LABEL_PAD,
                ly: cy - R - 4,
-               anchor: cx > iW * 0.72 ? 'end' : 'start' };
+               anchor: 'start' };
     });
 
     // Simple iterative push: 30 passes
