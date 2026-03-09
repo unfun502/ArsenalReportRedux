@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arsenal Report — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script
+  async
+  crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_bGVhcm5pbmctZ3JvdXBlci0yNS5jbGVyay5hY2NvdW50cy5kZXYk"
+  src="https://learning-grouper-25.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --red: #DB0007; --red-dark: #9e0005; --gold: #C8960C;
+    --bg: #080808; --surface: #111111; --surface2: #1a1a1a;
+    --border: #222222; --text: #f0f0f0; --muted: #666;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; min-height: 100vh; }
+
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px 32px; border-bottom: 1px solid var(--border);
+    background: #0a0a0a; position: sticky; top: 0; z-index: 100;
+  }
+  .crest { width: 42px; height: 42px; object-fit: contain; flex-shrink: 0; }
+  header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .back-link {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted); text-decoration: none;
+    border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .back-link:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  #clerkUserBtn { min-width: 32px; min-height: 32px; }
+  .admin-badge {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; background: var(--red-dark); color: #fff;
+    border-radius: 4px; padding: 3px 8px;
+  }
+
+  /* ── Auth gate ── */
+  #authGate {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 70vh; gap: 16px; text-align: center;
+  }
+  #authGate p { color: var(--muted); font-size: 15px; }
+  .btn-signin {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; letter-spacing: 2px;
+    text-transform: uppercase; background: var(--red); color: #fff;
+    border: none; border-radius: 6px; padding: 10px 24px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-signin:hover { background: var(--red-dark); }
+
+  /* ── Main container ── */
+  #adminUI { display: none; }
+  .main-wrap { max-width: 1200px; margin: 0 auto; padding: 28px 32px; }
+
+  /* ── Tabs ── */
+  .tab-bar {
+    display: flex; gap: 4px; border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .tab-btn {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted); background: none; border: none;
+    padding: 10px 18px; cursor: pointer; border-bottom: 2px solid transparent;
+    transition: color 0.15s; margin-bottom: -1px;
+  }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--red); }
+  .tab-btn:hover { color: var(--text); }
+
+  /* ── Players tab ── */
+  .toolbar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .search-input {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 8px 14px; font-family: 'Barlow', sans-serif; font-size: 14px;
+    flex: 1; min-width: 180px; outline: none; transition: border-color 0.15s;
+  }
+  .search-input:focus { border-color: rgba(255,255,255,0.3); }
+  .filter-select {
+    background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 6px; padding: 8px 10px; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px; letter-spacing: 1px; text-transform: uppercase; outline: none; cursor: pointer;
+  }
+  .btn-add {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; background: var(--red); color: #fff; border: none;
+    border-radius: 6px; padding: 8px 18px; cursor: pointer; transition: background 0.15s;
+    white-space: nowrap; margin-left: auto;
+  }
+  .btn-add:hover { background: var(--red-dark); }
+
+  .player-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .player-table th {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted); text-align: left;
+    padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  .player-table td { padding: 10px 12px; border-bottom: 1px solid #181818; vertical-align: middle; }
+  .player-table tbody tr:hover { background: var(--surface); }
+  .player-table tbody tr.inactive td { opacity: 0.45; }
+  .badge {
+    display: inline-block; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+    border-radius: 4px; padding: 2px 7px; font-weight: 600;
+  }
+  .badge-active { background: rgba(16,185,129,0.15); color: #10b981; }
+  .badge-inactive { background: rgba(255,255,255,0.05); color: var(--muted); }
+  .player-img-cell { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; background: var(--surface2); }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-edit, .btn-deactivate {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 1.5px;
+    text-transform: uppercase; border-radius: 5px; padding: 4px 10px; cursor: pointer;
+    border: none; transition: background 0.15s;
+  }
+  .btn-edit { background: rgba(255,255,255,0.08); color: var(--text); }
+  .btn-edit:hover { background: rgba(255,255,255,0.14); }
+  .btn-deactivate { background: rgba(219,0,7,0.12); color: #e74c3c; }
+  .btn-deactivate:hover { background: rgba(219,0,7,0.22); }
+
+  /* ── Formation tab ── */
+  .formation-grid { display: flex; flex-direction: column; gap: 20px; }
+  .formation-row-label {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  .slot-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .slot-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; min-width: 140px; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .slot-card:hover { border-color: rgba(255,255,255,0.25); background: var(--surface2); }
+  .slot-pos { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; color: var(--red); }
+  .slot-names { margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+  .slot-name { font-size: 12px; color: var(--text); }
+  .slot-name:first-child { font-weight: 600; }
+  .slot-name:not(:first-child) { color: var(--muted); font-size: 11px; }
+  .slot-empty { font-size: 12px; color: var(--muted); font-style: italic; }
+
+  /* ── Modals ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    display: flex; align-items: flex-start; justify-content: center;
+    z-index: 500; padding: 24px 16px; overflow-y: auto;
+  }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    width: 100%; max-width: 640px; padding: 28px; position: relative;
+  }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px;
+    color: var(--text); margin-bottom: 20px;
+  }
+  .modal-close {
+    position: absolute; top: 16px; right: 16px; background: none; border: none;
+    color: var(--muted); cursor: pointer; font-size: 20px; line-height: 1;
+    padding: 4px 8px; border-radius: 4px; transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  /* ── Form ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-full { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .form-input, .form-select {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 8px 10px; font-family: 'Barlow', sans-serif; font-size: 13px;
+    outline: none; transition: border-color 0.15s; width: 100%;
+  }
+  .form-input:focus, .form-select:focus { border-color: rgba(255,255,255,0.3); }
+  .form-select option { background: #1a1a1a; }
+  .form-input[readonly] { color: var(--muted); cursor: default; }
+  .form-check-row { display: flex; align-items: center; gap: 10px; }
+  .form-check { width: 16px; height: 16px; accent-color: var(--red); cursor: pointer; }
+
+  /* ── Salary history section ── */
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--muted);
+    margin: 22px 0 10px; padding-top: 16px; border-top: 1px solid var(--border);
+  }
+  .sal-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px; }
+  .sal-table th {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted); text-align: left;
+    padding: 6px 8px; border-bottom: 1px solid var(--border);
+  }
+  .sal-table td { padding: 7px 8px; border-bottom: 1px solid #181818; }
+  .sal-empty { color: var(--muted); font-size: 13px; margin: 8px 0; }
+  .add-sal-row { display: flex; gap: 8px; align-items: flex-end; margin-top: 8px; }
+  .add-sal-row .form-input { flex: 1; }
+  .btn-add-sal {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 1.5px;
+    text-transform: uppercase; background: rgba(200,150,12,0.15); color: var(--gold);
+    border: 1px solid rgba(200,150,12,0.3); border-radius: 6px;
+    padding: 8px 14px; cursor: pointer; transition: background 0.15s; white-space: nowrap;
+  }
+  .btn-add-sal:hover { background: rgba(200,150,12,0.25); }
+
+  /* ── Modal footer ── */
+  .modal-footer { display: flex; gap: 10px; margin-top: 22px; justify-content: flex-end; }
+  .btn-save {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; background: var(--red); color: #fff;
+    border: none; border-radius: 6px; padding: 10px 22px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-save:hover { background: var(--red-dark); }
+  .btn-cancel {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; letter-spacing: 2px;
+    text-transform: uppercase; background: rgba(255,255,255,0.06); color: var(--muted);
+    border: 1px solid var(--border); border-radius: 6px; padding: 10px 22px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-cancel:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+  .status-msg { font-size: 13px; padding: 8px 12px; border-radius: 6px; display: none; }
+  .status-msg.ok  { background: rgba(16,185,129,0.15); color: #10b981; display: block; }
+  .status-msg.err { background: rgba(219,0,7,0.12); color: #e74c3c; display: block; }
+
+  /* ── Slot modal ── */
+  #slotModal .slot-names-editor { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+  #slotModal .slot-name-row { display: flex; align-items: center; gap: 8px; }
+  #slotModal .slot-name-row .form-input { flex: 1; }
+  #slotModal .slot-role-label {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted); min-width: 60px;
+  }
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 1000;
+    background: #1a1a1a; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 18px; font-size: 13px; color: var(--text);
+    transform: translateY(100px); opacity: 0; transition: transform 0.25s, opacity 0.25s;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.ok  { border-color: #10b981; color: #10b981; }
+  .toast.err { border-color: #e74c3c; color: #e74c3c; }
+</style>
+</head>
+<body>
+
+<!-- Arsenal crest base64 reused from index.html — shortened for admin header -->
+<header>
+  <img class="crest" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'%3E%3Ccircle cx='26' cy='26' r='26' fill='%23DB0007'/%3E%3Ctext x='26' y='32' text-anchor='middle' fill='white' font-size='18' font-family='serif'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E" alt="Arsenal" onerror="this.style.display='none'">
+  <h1>ARSENAL ADMIN</h1>
+  <div class="header-right">
+    <span class="admin-badge">Admin</span>
+    <a class="back-link" href="/">← Back to Report</a>
+    <div id="clerkUserBtn"></div>
+  </div>
+</header>
+
+<!-- Auth gate -->
+<div id="authGate" style="display:none">
+  <p>Sign in to access the admin panel.</p>
+  <button class="btn-signin" id="signInBtn">Sign In</button>
+</div>
+
+<!-- Admin UI -->
+<div id="adminUI">
+  <div class="main-wrap">
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="players">Players</button>
+      <button class="tab-btn" data-tab="formation">Formation</button>
+    </div>
+
+    <!-- Players tab -->
+    <div id="tabPlayers">
+      <div class="toolbar">
+        <input type="text" class="search-input" id="playerSearch" placeholder="Search players…">
+        <select class="filter-select" id="posFilter">
+          <option value="">All positions</option>
+          <option>Goalkeeper</option>
+          <option>Defender</option>
+          <option>Midfielder</option>
+          <option>Forward</option>
+        </select>
+        <select class="filter-select" id="statusFilter">
+          <option value="">Active + inactive</option>
+          <option value="active">Active only</option>
+          <option value="inactive">Inactive only</option>
+        </select>
+        <button class="btn-add" id="addPlayerBtn">+ Add Player</button>
+      </div>
+      <table class="player-table" id="playerTable">
+        <thead>
+          <tr>
+            <th></th>
+            <th>#</th>
+            <th>Name</th>
+            <th>Pos</th>
+            <th>Weekly (€)</th>
+            <th>Annual (€)</th>
+            <th>Expires</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="playerTableBody">
+          <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Formation tab -->
+    <div id="tabFormation" style="display:none">
+      <div class="formation-grid" id="formationGrid">
+        <p style="color:var(--muted)">Loading…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Player edit modal -->
+<div class="modal-overlay" id="playerModal" style="display:none">
+  <div class="modal">
+    <button class="modal-close" id="playerModalClose">✕</button>
+    <div class="modal-title" id="playerModalTitle">Edit Player</div>
+    <div id="playerModalStatus" class="status-msg"></div>
+
+    <form id="playerForm" autocomplete="off">
+      <input type="hidden" id="fId">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Squad #</label>
+          <input class="form-input" type="number" id="fNum" placeholder="e.g. 7">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Active</label>
+          <div class="form-check-row" style="height:38px">
+            <input class="form-check" type="checkbox" id="fActive">
+            <label for="fActive" style="font-size:13px;color:var(--text)">Player is active</label>
+          </div>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Full Name *</label>
+          <input class="form-input" type="text" id="fName" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Position</label>
+          <input class="form-input" type="text" id="fPos" placeholder="e.g. CF / CAM">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Position Group</label>
+          <select class="form-select" id="fPosGroup">
+            <option value="">—</option>
+            <option>Forward</option>
+            <option>Midfielder</option>
+            <option>Defender</option>
+            <option>Goalkeeper</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date of Birth</label>
+          <input class="form-input" type="date" id="fDob">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nationality</label>
+          <input class="form-input" type="text" id="fNat">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Transfer Type</label>
+          <select class="form-select" id="fXferType">
+            <option value="">—</option>
+            <option>Transfer</option>
+            <option>Academy</option>
+            <option>Loan</option>
+            <option>Free</option>
+            <option>Loan-to-buy</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Transfer Fee (€m)</label>
+          <input class="form-input" type="number" step="0.1" id="fXferFee" placeholder="e.g. 65.0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Transfer Date</label>
+          <input class="form-input" type="text" id="fXferDate" placeholder="e.g. Jun 2023">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Year Signed (end-of-year)</label>
+          <input class="form-input" type="number" id="fYearSigned" placeholder="e.g. 2023">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contract Signed</label>
+          <input class="form-input" type="date" id="fSigned">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contract Expiration</label>
+          <input class="form-input" type="date" id="fExpiration">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contract Yrs Remaining</label>
+          <input class="form-input" type="text" id="fContractYrs" readonly placeholder="auto-calculated">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Weekly Salary (€ raw)</label>
+          <input class="form-input" type="text" id="fSalaryPW" placeholder="e.g. €250,000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Annual Salary 25/26 (€ raw)</label>
+          <input class="form-input" type="text" id="fSalaryPY" placeholder="e.g. €13,000,000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">FBref ID</label>
+          <input class="form-input" type="text" id="fFbrefId">
+        </div>
+        <div class="form-group">
+          <label class="form-label">FBref URL</label>
+          <input class="form-input" type="text" id="fFbrefUrl" placeholder="https://fbref.com/en/players/…">
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">Image CDN URL</label>
+          <input class="form-input" type="text" id="fImgUrl" placeholder="https://cdn.devlab502.net/arsenal-report/name.png">
+        </div>
+      </div>
+
+      <!-- Salary history -->
+      <div class="section-title">Salary History</div>
+      <table class="sal-table" id="salHistTable">
+        <thead><tr><th>Season</th><th>Annual (€ raw)</th></tr></thead>
+        <tbody id="salHistBody"><tr><td colspan="2" class="sal-empty">—</td></tr></tbody>
+      </table>
+      <div class="add-sal-row">
+        <input class="form-input" type="text" id="salSeason" placeholder="e.g. 26/27" style="max-width:100px">
+        <input class="form-input" type="text" id="salAmount" placeholder="e.g. €13,000,000">
+        <button type="button" class="btn-add-sal" id="addSalBtn">+ Add Season</button>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" id="playerModalCancel">Cancel</button>
+        <button type="submit" class="btn-save">Save Player</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Formation slot modal -->
+<div class="modal-overlay" id="slotModal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <button class="modal-close" id="slotModalClose">✕</button>
+    <div class="modal-title" id="slotModalTitle">Edit Slot</div>
+    <div id="slotModalStatus" class="status-msg"></div>
+    <input type="hidden" id="slotId">
+    <div class="slot-names-editor" id="slotNamesEditor"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="slotModalCancel">Cancel</button>
+      <button class="btn-save" id="slotSaveBtn">Save Slot</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const ADMIN_USER_ID = 'user_3AdbnJCmquM3NDsW2glzfLxYvGB';
+
+// ── Clerk init ─────────────────────────────────────────────────────────────
+let clerk = null;
+let clerkToken = null; // cached token
+
+async function waitForClerk() {
+  return new Promise(resolve => {
+    if (window.Clerk) { resolve(window.Clerk); return; }
+    const iv = setInterval(() => {
+      if (window.Clerk) { clearInterval(iv); resolve(window.Clerk); }
+    }, 50);
+  });
+}
+
+async function getToken() {
+  if (!clerk || !clerk.session) return null;
+  return clerk.session.getToken();
+}
+
+// ── API helper ─────────────────────────────────────────────────────────────
+async function adminFetch(path, opts = {}) {
+  const token = await getToken();
+  if (!token) throw new Error('Not authenticated');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    ...(opts.headers || {}),
+  };
+  const res = await fetch(`/api/admin${path}`, { ...opts, headers });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${res.status}: ${text}`);
+  }
+  const ct = res.headers.get('Content-Type') || '';
+  return ct.includes('application/json') ? res.json() : null;
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+function fmtEuro(val) {
+  if (!val) return '—';
+  const n = parseInt(val);
+  if (isNaN(n)) return '—';
+  if (n >= 1_000_000) return '€' + (n / 1_000_000).toFixed(1) + 'm';
+  if (n >= 1_000) return '€' + Math.round(n / 1000) + 'k';
+  return '€' + n;
+}
+
+function parseEuro(str) {
+  if (!str) return null;
+  const n = parseInt(String(str).replace(/[^0-9]/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+function calcContractYrs(expiration) {
+  if (!expiration) return null;
+  const days = (new Date(expiration) - new Date()) / 86400000;
+  return Math.max(0, Math.ceil(days / 365.25));
+}
+
+function showToast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+function formatSalaryInput(input) {
+  input.addEventListener('focus', function () {
+    const raw = parseEuro(this.value);
+    this.value = raw !== null ? raw : '';
+  });
+  input.addEventListener('blur', function () {
+    const raw = parseEuro(this.value);
+    this.value = raw !== null ? '€' + raw.toLocaleString() : '';
+  });
+}
+
+// ── Player table ───────────────────────────────────────────────────────────
+let allPlayers = [];
+
+async function loadPlayers() {
+  try {
+    allPlayers = await adminFetch('/players?order=name');
+    renderPlayerTable();
+  } catch (err) {
+    document.getElementById('playerTableBody').innerHTML =
+      `<tr><td colspan="9" style="text-align:center;color:#e74c3c;padding:24px">${err.message}</td></tr>`;
+  }
+}
+
+function renderPlayerTable() {
+  const search = document.getElementById('playerSearch').value.toLowerCase();
+  const posF   = document.getElementById('posFilter').value;
+  const statusF = document.getElementById('statusFilter').value;
+
+  const filtered = allPlayers.filter(p => {
+    if (search && !p.name.toLowerCase().includes(search)) return false;
+    if (posF && p.pos_group !== posF) return false;
+    if (statusF === 'active' && !p.active) return false;
+    if (statusF === 'inactive' && p.active) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('playerTableBody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No players found</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => `
+    <tr class="${p.active ? '' : 'inactive'}" data-id="${p.id}">
+      <td>${p.img_url ? `<img class="player-img-cell" src="${p.img_url}" alt="">` : '<div class="player-img-cell"></div>'}</td>
+      <td style="color:var(--muted)">${p.squad_num ?? '—'}</td>
+      <td style="font-weight:600">${p.name}</td>
+      <td style="color:var(--muted)">${p.pos || '—'}</td>
+      <td>${fmtEuro(p.salary_pw_raw)}</td>
+      <td>${fmtEuro(p.salary_py_raw)}</td>
+      <td style="color:var(--muted);white-space:nowrap">${p.expiration ? p.expiration.slice(0,10) : '—'}</td>
+      <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
+      <td>
+        <div class="btn-row">
+          <button class="btn-edit" onclick="openEditPlayer(${p.id})">Edit</button>
+          <button class="btn-deactivate" onclick="toggleActive(${p.id},${p.active})">${p.active ? 'Deactivate' : 'Reactivate'}</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('playerSearch').addEventListener('input', renderPlayerTable);
+document.getElementById('posFilter').addEventListener('change', renderPlayerTable);
+document.getElementById('statusFilter').addEventListener('change', renderPlayerTable);
+
+async function toggleActive(id, currentActive) {
+  if (!confirm(`${currentActive ? 'Deactivate' : 'Reactivate'} this player?`)) return;
+  try {
+    await adminFetch(`/players?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ active: !currentActive }),
+    });
+    showToast(currentActive ? 'Player deactivated' : 'Player reactivated');
+    await loadPlayers();
+  } catch (err) {
+    showToast(err.message, 'err');
+  }
+}
+
+// ── Player modal ───────────────────────────────────────────────────────────
+let editPlayerId = null;
+
+function openAddPlayer() {
+  editPlayerId = null;
+  document.getElementById('playerModalTitle').textContent = 'Add Player';
+  document.getElementById('playerForm').reset();
+  document.getElementById('fActive').checked = true;
+  document.getElementById('fContractYrs').value = '';
+  document.getElementById('salHistBody').innerHTML = '<tr><td colspan="2" class="sal-empty">—</td></tr>';
+  setModalStatus('');
+  document.getElementById('playerModal').style.display = 'flex';
+}
+
+async function openEditPlayer(id) {
+  const p = allPlayers.find(x => x.id === id);
+  if (!p) return;
+  editPlayerId = id;
+  document.getElementById('playerModalTitle').textContent = 'Edit Player';
+
+  document.getElementById('fId').value = p.id;
+  document.getElementById('fNum').value = p.squad_num ?? '';
+  document.getElementById('fName').value = p.name ?? '';
+  document.getElementById('fPos').value = p.pos ?? '';
+  document.getElementById('fPosGroup').value = p.pos_group ?? '';
+  document.getElementById('fDob').value = p.dob ? p.dob.slice(0,10) : '';
+  document.getElementById('fNat').value = p.nationality ?? '';
+  document.getElementById('fXferType').value = p.transfer_type ?? '';
+  document.getElementById('fXferFee').value = p.transfer_fee_raw ?? '';
+  document.getElementById('fXferDate').value = p.transfer_date ?? '';
+  document.getElementById('fYearSigned').value = p.year_signed ?? '';
+  document.getElementById('fSigned').value = p.signed ? p.signed.slice(0,10) : '';
+  document.getElementById('fExpiration').value = p.expiration ? p.expiration.slice(0,10) : '';
+  document.getElementById('fContractYrs').value = calcContractYrs(p.expiration) ?? '';
+  document.getElementById('fSalaryPW').value = p.salary_pw_raw ? '€' + p.salary_pw_raw.toLocaleString() : '';
+  document.getElementById('fSalaryPY').value = p.salary_py_raw ? '€' + p.salary_py_raw.toLocaleString() : '';
+  document.getElementById('fFbrefId').value = p.fbref_id ?? '';
+  document.getElementById('fFbrefUrl').value = p.fbref_url ?? '';
+  document.getElementById('fImgUrl').value = p.img_url ?? '';
+  document.getElementById('fActive').checked = p.active ?? true;
+
+  setModalStatus('');
+  document.getElementById('playerModal').style.display = 'flex';
+  await loadSalHistory(id);
+}
+
+function setModalStatus(msg, type = '') {
+  const el = document.getElementById('playerModalStatus');
+  el.textContent = msg;
+  el.className = 'status-msg' + (msg ? ` ${type}` : '');
+}
+
+document.getElementById('fExpiration').addEventListener('change', function () {
+  document.getElementById('fContractYrs').value = calcContractYrs(this.value) ?? '';
+});
+
+// Salary euro formatting
+formatSalaryInput(document.getElementById('fSalaryPW'));
+formatSalaryInput(document.getElementById('fSalaryPY'));
+formatSalaryInput(document.getElementById('salAmount'));
+
+// ── Salary history ─────────────────────────────────────────────────────────
+async function loadSalHistory(playerId) {
+  try {
+    const rows = await adminFetch(`/salary_history?player_id=eq.${playerId}&order=season`);
+    renderSalHistory(rows);
+  } catch {
+    document.getElementById('salHistBody').innerHTML = '<tr><td colspan="2" style="color:#e74c3c">Failed to load</td></tr>';
+  }
+}
+
+function renderSalHistory(rows) {
+  const tbody = document.getElementById('salHistBody');
+  if (!rows || !rows.length) {
+    tbody.innerHTML = '<tr><td colspan="2" class="sal-empty">No history yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${r.season}</td>
+      <td>${r.salary_py_raw ? '€' + parseInt(r.salary_py_raw).toLocaleString() : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('addSalBtn').addEventListener('click', async () => {
+  if (!editPlayerId) { setModalStatus('Save player first before adding salary history.', 'err'); return; }
+  const season = document.getElementById('salSeason').value.trim();
+  const amount = parseEuro(document.getElementById('salAmount').value);
+  if (!season || !amount) { setModalStatus('Enter a season (e.g. 26/27) and amount.', 'err'); return; }
+
+  try {
+    await adminFetch('/salary_history', {
+      method: 'POST',
+      headers: { 'Prefer': 'return=representation,resolution=merge-duplicates' },
+      body: JSON.stringify({ player_id: editPlayerId, season, salary_py_raw: amount }),
+    });
+    document.getElementById('salSeason').value = '';
+    document.getElementById('salAmount').value = '';
+    await loadSalHistory(editPlayerId);
+    setModalStatus('Season added', 'ok');
+    setTimeout(() => setModalStatus(''), 2000);
+  } catch (err) {
+    setModalStatus(err.message, 'err');
+  }
+});
+
+// ── Save player ────────────────────────────────────────────────────────────
+document.getElementById('playerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  setModalStatus('Saving…', '');
+
+  const isNew = !editPlayerId;
+  const fields = {
+    squad_num:        parseInt(document.getElementById('fNum').value) || null,
+    name:             document.getElementById('fName').value.trim(),
+    pos:              document.getElementById('fPos').value.trim() || null,
+    pos_group:        document.getElementById('fPosGroup').value || null,
+    dob:              document.getElementById('fDob').value || null,
+    nationality:      document.getElementById('fNat').value.trim() || null,
+    transfer_type:    document.getElementById('fXferType').value || null,
+    transfer_fee_raw: parseFloat(document.getElementById('fXferFee').value) || null,
+    transfer_date:    document.getElementById('fXferDate').value.trim() || null,
+    year_signed:      parseInt(document.getElementById('fYearSigned').value) || null,
+    signed:           document.getElementById('fSigned').value || null,
+    expiration:       document.getElementById('fExpiration').value || null,
+    salary_pw_raw:    parseEuro(document.getElementById('fSalaryPW').value),
+    salary_py_raw:    parseEuro(document.getElementById('fSalaryPY').value),
+    fbref_id:         document.getElementById('fFbrefId').value.trim() || null,
+    fbref_url:        document.getElementById('fFbrefUrl').value.trim() || null,
+    img_url:          document.getElementById('fImgUrl').value.trim() || null,
+    active:           document.getElementById('fActive').checked,
+  };
+
+  try {
+    if (isNew) {
+      const result = await adminFetch('/players', {
+        method: 'POST',
+        headers: { 'Prefer': 'return=representation' },
+        body: JSON.stringify(fields),
+      });
+      if (result && result[0]) editPlayerId = result[0].id;
+      setModalStatus('Player added!', 'ok');
+    } else {
+      await adminFetch(`/players?id=eq.${editPlayerId}`, {
+        method: 'PATCH',
+        headers: { 'Prefer': 'return=representation' },
+        body: JSON.stringify(fields),
+      });
+      setModalStatus('Saved!', 'ok');
+    }
+    showToast(isNew ? 'Player added' : 'Player saved');
+    await loadPlayers();
+    setTimeout(() => setModalStatus(''), 2000);
+  } catch (err) {
+    setModalStatus(err.message, 'err');
+  }
+});
+
+function closePlayerModal() {
+  document.getElementById('playerModal').style.display = 'none';
+  editPlayerId = null;
+}
+document.getElementById('addPlayerBtn').addEventListener('click', openAddPlayer);
+document.getElementById('playerModalClose').addEventListener('click', closePlayerModal);
+document.getElementById('playerModalCancel').addEventListener('click', closePlayerModal);
+document.getElementById('playerModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closePlayerModal();
+});
+
+// ── Formation ──────────────────────────────────────────────────────────────
+let allSlots = [];
+
+async function loadFormation() {
+  try {
+    allSlots = await adminFetch('/formation_slots?order=row_order,slot_order');
+    renderFormation();
+  } catch (err) {
+    document.getElementById('formationGrid').innerHTML =
+      `<p style="color:#e74c3c">${err.message}</p>`;
+  }
+}
+
+function renderFormation() {
+  const grid = document.getElementById('formationGrid');
+  const byRow = {};
+  allSlots.forEach(s => {
+    if (!byRow[s.row_name]) byRow[s.row_name] = { order: s.row_order, slots: [] };
+    byRow[s.row_name].slots.push(s);
+  });
+
+  const rows = Object.entries(byRow).sort((a, b) => a[1].order - b[1].order);
+  grid.innerHTML = rows.map(([rowName, { slots }]) => `
+    <div>
+      <div class="formation-row-label">${rowName}</div>
+      <div class="slot-row">
+        ${slots.map(s => `
+          <div class="slot-card" onclick="openSlotModal(${s.id})">
+            <div class="slot-pos">${s.pos}</div>
+            <div class="slot-names">
+              ${(s.player_names && s.player_names.length)
+                ? s.player_names.map(n => `<div class="slot-name">${n}</div>`).join('')
+                : '<div class="slot-empty">Empty</div>'}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Slot modal ─────────────────────────────────────────────────────────────
+function openSlotModal(id) {
+  const slot = allSlots.find(s => s.id === id);
+  if (!slot) return;
+  document.getElementById('slotId').value = id;
+  document.getElementById('slotModalTitle').textContent = `Edit — ${slot.pos}`;
+  document.getElementById('slotModalStatus').className = 'status-msg';
+
+  const names = (slot.player_names || []).concat(['', '', '']).slice(0, 3);
+  const labels = ['Starter', 'Backup 1', 'Backup 2'];
+  document.getElementById('slotNamesEditor').innerHTML = names.map((n, i) => `
+    <div class="slot-name-row">
+      <span class="slot-role-label">${labels[i]}</span>
+      <input class="form-input" type="text" value="${n}" data-slot-idx="${i}" placeholder="${labels[i]}">
+    </div>
+  `).join('');
+
+  document.getElementById('slotModal').style.display = 'flex';
+}
+
+document.getElementById('slotSaveBtn').addEventListener('click', async () => {
+  const id = parseInt(document.getElementById('slotId').value);
+  const inputs = document.querySelectorAll('#slotNamesEditor input');
+  const names = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+
+  try {
+    await adminFetch(`/formation_slots?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=representation' },
+      body: JSON.stringify({ player_names: names }),
+    });
+    const slot = allSlots.find(s => s.id === id);
+    if (slot) slot.player_names = names;
+    renderFormation();
+    closeSlotModal();
+    showToast('Formation slot saved');
+  } catch (err) {
+    document.getElementById('slotModalStatus').textContent = err.message;
+    document.getElementById('slotModalStatus').className = 'status-msg err';
+  }
+});
+
+function closeSlotModal() { document.getElementById('slotModal').style.display = 'none'; }
+document.getElementById('slotModalClose').addEventListener('click', closeSlotModal);
+document.getElementById('slotModalCancel').addEventListener('click', closeSlotModal);
+document.getElementById('slotModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeSlotModal();
+});
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('tabPlayers').style.display   = tab === 'players'   ? '' : 'none';
+    document.getElementById('tabFormation').style.display = tab === 'formation' ? '' : 'none';
+    if (tab === 'formation' && !allSlots.length) loadFormation();
+  });
+});
+
+// ── Main init ──────────────────────────────────────────────────────────────
+(async function init() {
+  clerk = await waitForClerk();
+  await clerk.load();
+
+  // Mount user button in header
+  clerk.mountUserButton(document.getElementById('clerkUserBtn'));
+
+  if (!clerk.user) {
+    document.getElementById('authGate').style.display = 'flex';
+    document.getElementById('signInBtn').addEventListener('click', () => clerk.openSignIn());
+    return;
+  }
+
+  if (clerk.user.id !== ADMIN_USER_ID) {
+    document.getElementById('authGate').style.display = 'flex';
+    document.getElementById('authGate').innerHTML =
+      `<p>You are signed in as <strong>${clerk.user.primaryEmailAddress?.emailAddress}</strong> but do not have admin access.</p>
+       <a class="back-link" href="/">← Back to Report</a>`;
+    return;
+  }
+
+  // Authorized — show admin UI
+  document.getElementById('adminUI').style.display = 'block';
+  loadPlayers();
+})();
+</script>
+</body>
+</html>
