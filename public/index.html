@@ -618,6 +618,241 @@
 
   #notesPage.visible { display: block; }
 
+  /* ── Map View page ───────────────────────────────────────────────── */
+  #mapPage {
+    display: none;
+    position: relative;
+    height: calc(100vh - 56px);
+  }
+  #mapPage.visible { display: flex; }
+
+  #mapContainer {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #0c0e14;
+    min-width: 0;
+  }
+
+  #mapSvg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .map-country {
+    stroke: #2a2a35;
+    stroke-width: 0.5;
+  }
+  .map-country.map-region {
+    cursor: pointer;
+    transition: opacity 0.12s;
+  }
+  .map-country.map-region:hover { opacity: 0.72 !important; }
+
+  /* South America inset */
+  #mapInset {
+    position: absolute;
+    bottom: 60px;
+    left: 64px;
+    width: 190px;
+    height: 220px;
+    background: #0c0e14;
+    border: 1px solid #2e2e3a;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  #mapInsetSvg { width: 100%; height: calc(100% - 18px); display: block; }
+
+  .map-inset-label {
+    position: absolute;
+    bottom: 4px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 10px;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #555;
+    pointer-events: none;
+  }
+
+  /* Legend — top-left, aligned with the panel header */
+  #mapLegend {
+    position: absolute;
+    top: 20px;
+    left: 64px;
+    background: rgba(10,10,16,0.88);
+    border: 1px solid #2e2e3a;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-family: 'Barlow', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 10;
+  }
+  .map-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .map-legend-item:last-child { margin-bottom: 0; }
+  .map-legend-item:hover { opacity: 0.75; }
+  .map-legend-dot {
+    width: 11px; height: 11px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .map-legend-count {
+    margin-left: auto;
+    padding-left: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Slide-in player panel */
+  #mapPanel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100%;
+    background: rgba(17,17,17,0.96);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 16px;
+    z-index: 20;
+    backdrop-filter: blur(4px);
+  }
+  #mapPanel.hidden { display: none; }
+
+  .map-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .map-panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 1px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .map-panel-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+    padding: 0 0 0 8px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .map-panel-close:hover { color: var(--text); }
+
+  .map-player-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .map-player-card:last-child { border-bottom: none; }
+  .map-player-img {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--surface2);
+    flex-shrink: 0;
+  }
+  .map-player-name {
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .map-player-meta {
+    font-family: 'Barlow', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  #mapLoading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+  }
+
+  /* Country hover tooltip */
+  #mapTooltip {
+    display: none;
+    position: fixed;
+    background: rgba(10,10,16,0.96);
+    border: 1px solid #2e2e3a;
+    border-radius: 8px;
+    padding: 10px 13px;
+    font-family: 'Barlow', sans-serif;
+    color: var(--text);
+    pointer-events: none;
+    z-index: 1000;
+    min-width: 160px;
+    max-width: 230px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }
+  .map-tip-country {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 7px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #2e2e3a;
+  }
+  .map-tip-player {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 13px;
+    padding: 3px 0;
+  }
+  .map-tip-pos {
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 640px) {
+    #mapPage.visible { display: block; }
+    #mapPanel {
+      position: absolute;
+      top: auto;
+      bottom: 0; left: 0; right: 0;
+      width: 100%;
+      height: 58vh;
+      border-left: none;
+      border-top: 1px solid var(--border);
+    }
+    #mapInset { width: 130px; height: 150px; bottom: 40px; left: 16px; }
+    #mapLegend { font-size: 11px; top: 16px; left: 16px; padding: 9px 10px; }
+  }
+
   .notes-section {
     margin-bottom: 44px;
   }
@@ -1542,6 +1777,7 @@
         <button class="nav-item active" data-page="squad">Current Squad</button>
         <button class="nav-item" data-page="financials">Financials</button>
         <button class="nav-item" data-page="depth">Depth Chart</button>
+        <button class="nav-item" data-page="map">Map View</button>
         <button class="nav-item" data-page="notes">Notes</button>
         <a class="nav-item" id="adminNavLink" href="/admin.html" style="display:none;text-decoration:none">Admin</a>
       </div>
@@ -1669,6 +1905,27 @@
     </div>
   </div>
 </div>
+
+<!-- Map View page -->
+<div id="mapPage">
+  <div id="mapContainer">
+    <div id="mapLoading">Loading map…</div>
+    <svg id="mapSvg" viewBox="0 0 960 560" preserveAspectRatio="xMidYMid meet"></svg>
+    <div id="mapInset">
+      <svg id="mapInsetSvg" viewBox="0 0 190 210" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="map-inset-label">South America</div>
+    </div>
+    <div id="mapLegend"></div>
+    <div id="mapPanel" class="hidden">
+      <div class="map-panel-header">
+        <div class="map-panel-title" id="mapPanelTitle"></div>
+        <button class="map-panel-close" id="mapPanelClose">&times;</button>
+      </div>
+      <div id="mapPanelCards"></div>
+    </div>
+  </div>
+</div>
+<div id="mapTooltip"></div>
 
 <!-- Detail panel -->
 <div class="detail-panel" id="detailPanel">
@@ -2473,12 +2730,14 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
   const squadPage   = document.getElementById('squadPage');
   const finPage     = document.getElementById('financialsPage');
   const notesPage   = document.getElementById('notesPage');
+  const mapPage     = document.getElementById('mapPage');
 
   function hideAllPages() {
     squadPage.classList.add('hidden');
     finPage.classList.remove('visible');
     notesPage.classList.remove('visible');
     depthPage.classList.remove('visible');
+    mapPage.classList.remove('visible');
   }
 
   navTrigger.addEventListener('click', (e) => {
@@ -2513,6 +2772,9 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
         document.getElementById('buildBtn').classList.remove('active');
         document.getElementById('dcPitch').dataset.rendered = '';
         renderDepthChart();
+      } else if (page === 'map') {
+        mapPage.classList.add('visible');
+        renderMapPage();
       } else {
         squadPage.classList.remove('hidden');
       }
@@ -3107,6 +3369,298 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
       }
     } catch { /* Clerk failed to load — silently ignore, site still works */ }
   })();
+
+  // ── Map View ──────────────────────────────────────────────────────
+
+  const MAP_REGIONS = {
+    'England':         { color: '#b72a2a', countries: ['826'] },
+    'Northern Europe': { color: '#3a6fa8', countries: ['578','752','208','276','528','056'] },
+    'Southern Europe': { color: '#b8822a', countries: ['250','724','380','620'] },
+    'South America':   { color: '#2e8c5a', countries: ['076','218','032','170','600','604','858','862'] },
+  };
+
+  // Player nationality string → region name
+  const NAT_TO_REGION = {
+    'England':     'England',
+    'Germany':     'Northern Europe',
+    'Norway':      'Northern Europe',
+    'Sweden':      'Northern Europe',
+    'Denmark':     'Northern Europe',
+    'Netherlands': 'Northern Europe',
+    'Belgium':     'Northern Europe',
+    'France':      'Southern Europe',
+    'Spain':       'Southern Europe',
+    'Italy':       'Southern Europe',
+    'Portugal':    'Southern Europe',
+    'Brazil':      'South America',
+    'Ecuador':     'South America',
+    'Argentina':   'South America',
+    'Colombia':    'South America',
+  };
+
+  // ISO 3166-1 numeric → region (built from MAP_REGIONS)
+  const ISO_TO_REGION = {};
+  Object.entries(MAP_REGIONS).forEach(([r, d]) => d.countries.forEach(id => { ISO_TO_REGION[id] = r; }));
+
+  // ISO numeric → nationality string (for per-country player detection)
+  const ISO_TO_NAT = {
+    '826': 'England',   '276': 'Germany',  '578': 'Norway',
+    '752': 'Sweden',    '208': 'Denmark',  '528': 'Netherlands',
+    '056': 'Belgium',   '250': 'France',   '724': 'Spain',
+    '380': 'Italy',     '620': 'Portugal', '076': 'Brazil',
+    '218': 'Ecuador',   '032': 'Argentina','170': 'Colombia',
+    '600': 'Paraguay',  '604': 'Peru',     '858': 'Uruguay',
+    '862': 'Venezuela',
+  };
+
+  const NAT_FLAGS = {
+    'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'Germany': '🇩🇪', 'Norway': '🇳🇴',
+    'Sweden': '🇸🇪', 'Denmark': '🇩🇰', 'Netherlands': '🇳🇱',
+    'Belgium': '🇧🇪', 'France': '🇫🇷', 'Spain': '🇪🇸',
+    'Italy': '🇮🇹', 'Portugal': '🇵🇹', 'Brazil': '🇧🇷',
+    'Ecuador': '🇪🇨', 'Argentina': '🇦🇷', 'Colombia': '🇨🇴',
+  };
+
+  let mapRendered = false;
+  let topoLibLoaded = false;
+  let worldTopoData = null;
+  let _mapPlayersByRegion = null;
+
+  function _computePlayersByRegion() {
+    const result = {};
+    Object.keys(MAP_REGIONS).forEach(r => result[r] = []);
+    PLAYERS.forEach(p => {
+      const region = NAT_TO_REGION[p.nat];
+      if (region) result[region].push(p);
+    });
+    return result;
+  }
+
+  function loadTopoLibs(cb) {
+    if (topoLibLoaded) { cb(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js';
+    s.crossOrigin = 'anonymous';
+    s.onload = () => {
+      fetch('/countries-110m.json')
+        .then(r => r.json())
+        .then(data => { worldTopoData = data; topoLibLoaded = true; cb(); });
+    };
+    document.head.appendChild(s);
+  }
+
+  function renderMapPage() {
+    if (mapRendered) return;
+    loadD3(() => {
+      loadTopoLibs(() => {
+        document.getElementById('mapLoading').style.display = 'none';
+        _mapPlayersByRegion = _computePlayersByRegion();
+        _drawEuropeMap();
+        _drawSAInset();
+        _buildMapLegend();
+        mapRendered = true;
+      });
+    });
+  }
+
+  function _countryOpacity(isoId) {
+    const nat = ISO_TO_NAT[isoId];
+    if (!nat) return 0.45;
+    return PLAYERS.some(p => p.nat === nat) ? 1 : 0.45;
+  }
+
+  const _tip = () => document.getElementById('mapTooltip');
+
+  function _showCountryTooltip(event, isoId) {
+    const nat = ISO_TO_NAT[isoId];
+    if (!nat) return;
+    const players = PLAYERS.filter(p => p.nat === nat);
+    if (!players.length) return;
+
+    const posOrder = { Goalkeeper: 0, Defender: 1, Midfielder: 2, Forward: 3 };
+    const sorted = [...players].sort((a, b) =>
+      (posOrder[a.pos_group] ?? 9) - (posOrder[b.pos_group] ?? 9)
+    );
+    const flag = NAT_FLAGS[nat] || '';
+    const tip = _tip();
+    tip.innerHTML =
+      `<div class="map-tip-country">${flag} ${nat}</div>` +
+      sorted.map(p =>
+        `<div class="map-tip-player"><span>${p.name}</span><span class="map-tip-pos">${p.pos_group || p.pos}</span></div>`
+      ).join('');
+    _positionTooltip(event);
+    tip.style.display = 'block';
+  }
+
+  function _positionTooltip(event) {
+    const tip = _tip();
+    const pad = 14, w = 230, h = tip.offsetHeight || 120;
+    let x = event.clientX + pad;
+    let y = event.clientY - pad - h;
+    if (x + w > window.innerWidth - 8) x = event.clientX - w - pad;
+    if (y < 8) y = event.clientY + pad;
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  }
+
+  function _hideTooltip() { _tip().style.display = 'none'; }
+
+  function _drawEuropeMap() {
+    const countries = topojson.feature(worldTopoData, worldTopoData.objects.countries);
+    const borders   = topojson.mesh(worldTopoData, worldTopoData.objects.countries, (a, b) => a !== b);
+
+    // Fixed coordinate space via viewBox; projection tuned for Western/Central Europe
+    const W = 960, H = 560;
+    const proj = d3.geoMercator().center([7, 47]).scale(650).translate([W / 2, H / 2]);
+    const path = d3.geoPath().projection(proj);
+
+    const svg = d3.select('#mapSvg');
+    svg.selectAll('*').remove();
+    svg.append('rect').attr('width', W).attr('height', H).attr('fill', '#0c0e14');
+
+    const g = svg.append('g');
+
+    g.selectAll('.map-country')
+      .data(countries.features)
+      .join('path')
+      .attr('class', d => {
+        const id = String(d.id);
+        return 'map-country' + (ISO_TO_REGION[id] ? ' map-region' : '');
+      })
+      .attr('fill', d => {
+        const region = ISO_TO_REGION[String(d.id)];
+        return region ? MAP_REGIONS[region].color : '#1a1a24';
+      })
+      .attr('opacity', d => _countryOpacity(String(d.id)))
+      .attr('d', path)
+      .on('click', function(event, d) {
+        const region = ISO_TO_REGION[String(d.id)];
+        if (region) _showMapPanel(region);
+      })
+      .on('mouseenter', function(event, d) {
+        const id = String(d.id);
+        if (ISO_TO_REGION[id]) {
+          d3.select(this).attr('opacity', 0.7);
+          _showCountryTooltip(event, id);
+        }
+      })
+      .on('mousemove', function(event, d) {
+        if (ISO_TO_REGION[String(d.id)]) _positionTooltip(event);
+      })
+      .on('mouseleave', function(event, d) {
+        const id = String(d.id);
+        if (ISO_TO_REGION[id]) {
+          d3.select(this).attr('opacity', _countryOpacity(id));
+          _hideTooltip();
+        }
+      });
+
+    // Internal country borders
+    g.append('path').datum(borders)
+      .attr('fill', 'none').attr('stroke', '#2a2a35').attr('stroke-width', 0.5).attr('d', path);
+  }
+
+  function _drawSAInset() {
+    const countries = topojson.feature(worldTopoData, worldTopoData.objects.countries);
+    const borders   = topojson.mesh(worldTopoData, worldTopoData.objects.countries, (a, b) => a !== b);
+
+    const W = 190, H = 210;
+    // Center on South America
+    const proj = d3.geoMercator().center([-58, -18]).scale(165).translate([W / 2, H / 2 - 10]);
+    const path = d3.geoPath().projection(proj);
+
+    const svg = d3.select('#mapInsetSvg');
+    svg.selectAll('*').remove();
+    svg.append('rect').attr('width', W).attr('height', H).attr('fill', '#0c0e14');
+
+    const g = svg.append('g');
+
+    g.selectAll('.map-country')
+      .data(countries.features)
+      .join('path')
+      .attr('class', d => {
+        const id = String(d.id);
+        return 'map-country' + (ISO_TO_REGION[id] === 'South America' ? ' map-region' : '');
+      })
+      .attr('fill', d => {
+        const id = String(d.id);
+        return ISO_TO_REGION[id] === 'South America' ? MAP_REGIONS['South America'].color : '#1a1a24';
+      })
+      .attr('opacity', d => {
+        const id = String(d.id);
+        return ISO_TO_REGION[id] === 'South America' ? _countryOpacity(id) : 1;
+      })
+      .attr('d', path)
+      .on('click', function(event, d) {
+        if (ISO_TO_REGION[String(d.id)] === 'South America') _showMapPanel('South America');
+      })
+      .on('mouseenter', function(event, d) {
+        const id = String(d.id);
+        if (ISO_TO_REGION[id] === 'South America') {
+          d3.select(this).attr('opacity', 0.7);
+          _showCountryTooltip(event, id);
+        }
+      })
+      .on('mousemove', function(event, d) {
+        if (ISO_TO_REGION[String(d.id)] === 'South America') _positionTooltip(event);
+      })
+      .on('mouseleave', function(event, d) {
+        const id = String(d.id);
+        if (ISO_TO_REGION[id] === 'South America') {
+          d3.select(this).attr('opacity', _countryOpacity(id));
+          _hideTooltip();
+        }
+      });
+
+    g.append('path').datum(borders)
+      .attr('fill', 'none').attr('stroke', '#2a2a35').attr('stroke-width', 0.5).attr('d', path);
+  }
+
+  function _buildMapLegend() {
+    const legend = document.getElementById('mapLegend');
+    legend.innerHTML = '';
+    Object.entries(MAP_REGIONS).forEach(([name, data]) => {
+      const count = (_mapPlayersByRegion[name] || []).length;
+      const item = document.createElement('div');
+      item.className = 'map-legend-item';
+      item.innerHTML =
+        `<div class="map-legend-dot" style="background:${data.color}"></div>` +
+        `<span>${name}</span>` +
+        `<span class="map-legend-count">${count}</span>`;
+      item.addEventListener('click', () => _showMapPanel(name));
+      legend.appendChild(item);
+    });
+  }
+
+  function _showMapPanel(regionName) {
+    const players = (_mapPlayersByRegion || {})[regionName] || [];
+    document.getElementById('mapPanelTitle').textContent = regionName;
+
+    const posOrder = { Goalkeeper: 0, Defender: 1, Midfielder: 2, Forward: 3 };
+    const sorted = [...players].sort((a, b) => {
+      const pa = posOrder[a.pos_group] ?? 9, pb = posOrder[b.pos_group] ?? 9;
+      return pa - pb || a.name.localeCompare(b.name);
+    });
+
+    const cards = document.getElementById('mapPanelCards');
+    cards.innerHTML = '';
+    sorted.forEach(p => {
+      const flag = NAT_FLAGS[p.nat] || '';
+      const div = document.createElement('div');
+      div.className = 'map-player-card';
+      div.innerHTML =
+        `<img class="map-player-img" src="${p.img || ''}" alt="${p.name}" loading="lazy" onerror="this.style.visibility='hidden'">` +
+        `<div><div class="map-player-name">${p.name}</div>` +
+        `<div class="map-player-meta">${flag} ${p.nat} · ${p.pos_group || p.pos}</div></div>`;
+      cards.appendChild(div);
+    });
+
+    document.getElementById('mapPanel').classList.remove('hidden');
+  }
+
+  document.getElementById('mapPanelClose').addEventListener('click', () => {
+    document.getElementById('mapPanel').classList.add('hidden');
+  });
 
   // Initial render — fetch from API first
   loadData();

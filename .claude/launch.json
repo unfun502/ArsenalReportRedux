@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "C:\\Program Files\\Git\\bin\\bash.exe",
+      "runtimeArgs": ["-c", "npx wrangler dev --port 8787"],
+      "port": 8787
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["admin/server.js"],
+      "port": 3001
+    }
+  ]
+}
