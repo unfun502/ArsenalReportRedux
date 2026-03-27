@@ -13,6 +13,14 @@
   data-clerk-publishable-key="pk_test_bGVhcm5pbmctZ3JvdXBlci0yNS5jbGVyay5hY2NvdW50cy5kZXYk"
   src="https://learning-grouper-25.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
 ></script>
+<script src="https://browser.sentry-cdn.com/10.46.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
+<script>
+  Sentry.init({
+    dsn: 'https://d24b9ad235c84f8270ba86d53cb368da@o4511117168345088.ingest.us.sentry.io/4511117194428416',
+    integrations: [Sentry.browserTracingIntegration()],
+    tracesSampleRate: 1.0,
+  });
+</script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1759,6 +1767,69 @@
     :root { --card-w: 140px; }
     .card-img { height: 160px; }
   }
+
+  /* ── Feedback Modal ──────────────────────────────────────── */
+  .fb-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.72);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 16px;
+  }
+  .fb-modal-card {
+    background: #1a1a1a; border: 1px solid var(--border);
+    border-radius: 12px; width: 100%; max-width: 440px;
+    padding: 24px; position: relative;
+  }
+  .fb-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; letter-spacing: 0.05em; color: var(--text);
+  }
+  .fb-close {
+    background: none; border: none; color: var(--muted);
+    font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+  .fb-close:hover { color: var(--text); }
+  .fb-overlay[hidden] { display: none; }
+  .fb-screen { display: flex; flex-direction: column; gap: 8px; }
+  .fb-screen[hidden] { display: none; }
+  .fb-choice-btn {
+    display: block; width: 100%; padding: 14px 16px;
+    background: #222; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 15px; font-weight: 600; cursor: pointer;
+    text-align: left; transition: background 0.15s, border-color 0.15s;
+    text-decoration: none;
+  }
+  .fb-choice-btn:hover { background: #2a2a2a; border-color: #444; }
+  .fb-choice-secondary { color: var(--muted); font-weight: 400; }
+  .fb-choice-desc { font-size: 12px; color: var(--muted); margin: 0 0 8px 4px; }
+  .fb-back {
+    background: none; border: none; color: var(--muted); font-size: 13px;
+    cursor: pointer; padding: 0; margin-bottom: 12px; text-align: left;
+  }
+  .fb-back:hover { color: var(--text); }
+  .fb-select, .fb-input, .fb-textarea {
+    width: 100%; background: #111; border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 14px;
+    padding: 10px 12px; margin-bottom: 10px; box-sizing: border-box;
+    font-family: inherit;
+  }
+  .fb-select:focus, .fb-input:focus, .fb-textarea:focus { outline: none; border-color: #555; }
+  .fb-textarea { resize: vertical; min-height: 80px; }
+  .fb-submit-btn {
+    width: 100%; padding: 12px; background: #DB0007; border: none;
+    border-radius: 6px; color: #fff; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .fb-submit-btn:hover { background: #bf0006; }
+  .fb-submit-btn:disabled { background: #555; cursor: not-allowed; }
+  .fb-status { margin-top: 10px; font-size: 13px; padding: 10px 12px; border-radius: 6px; }
+  .fb-status-success { background: #0e9577; color: #fff; }
+  .fb-status-error   { background: #7f1d1d; color: #fca5a5; }
+  .fb-nav-separator { border: none; border-top: 1px solid var(--border); margin: 4px 8px; }
+  @media (max-width: 480px) {
+    .fb-overlay { padding: 0; align-items: flex-end; }
+    .fb-modal-card { border-radius: 16px 16px 0 0; max-width: 100%; padding-bottom: 32px; }
+  }
 </style>
 </head>
 <body>
@@ -1779,6 +1850,8 @@
         <button class="nav-item" data-page="depth">Depth Chart</button>
         <button class="nav-item" data-page="map">Map View</button>
         <button class="nav-item" data-page="notes">Notes</button>
+        <hr class="fb-nav-separator">
+        <button class="nav-item" data-page="feedback">Feedback</button>
         <a class="nav-item" id="adminNavLink" href="/admin.html" style="display:none;text-decoration:none">Admin</a>
       </div>
     </div>
@@ -2751,6 +2824,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
       const page = item.dataset.page;
+      if (page === 'feedback') { openFeedbackModal(); return; }
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
       navLabel.textContent = item.textContent;
@@ -3413,6 +3487,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     '862': 'Venezuela',
   };
 
+  // ISO codes that have at least one Arsenal player
   const NAT_FLAGS = {
     'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'Germany': '🇩🇪', 'Norway': '🇳🇴',
     'Sweden': '🇸🇪', 'Denmark': '🇩🇰', 'Netherlands': '🇳🇱',
@@ -3425,6 +3500,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
   let topoLibLoaded = false;
   let worldTopoData = null;
   let _mapPlayersByRegion = null;
+  let _playerIsos = null;
 
   function _computePlayersByRegion() {
     const result = {};
@@ -3455,6 +3531,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
       loadTopoLibs(() => {
         document.getElementById('mapLoading').style.display = 'none';
         _mapPlayersByRegion = _computePlayersByRegion();
+        _playerIsos = new Set(Object.entries(ISO_TO_NAT).filter(([, nat]) => PLAYERS.some(p => p.nat === nat)).map(([iso]) => iso));
         _drawEuropeMap();
         _drawSAInset();
         _buildMapLegend();
@@ -3528,8 +3605,9 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
         return 'map-country' + (ISO_TO_REGION[id] ? ' map-region' : '');
       })
       .attr('fill', d => {
-        const region = ISO_TO_REGION[String(d.id)];
-        return region ? MAP_REGIONS[region].color : '#1a1a24';
+        const id = String(d.id);
+        const region = ISO_TO_REGION[id];
+        return (region && _playerIsos.has(id)) ? MAP_REGIONS[region].color : '#0c0e14';
       })
       .attr('opacity', d => _countryOpacity(String(d.id)))
       .attr('d', path)
@@ -3584,7 +3662,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
       })
       .attr('fill', d => {
         const id = String(d.id);
-        return ISO_TO_REGION[id] === 'South America' ? MAP_REGIONS['South America'].color : '#1a1a24';
+        return (ISO_TO_REGION[id] === 'South America' && _playerIsos.has(id)) ? MAP_REGIONS['South America'].color : '#0c0e14';
       })
       .attr('opacity', d => {
         const id = String(d.id);
@@ -3636,11 +3714,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     const players = (_mapPlayersByRegion || {})[regionName] || [];
     document.getElementById('mapPanelTitle').textContent = regionName;
 
-    const posOrder = { Goalkeeper: 0, Defender: 1, Midfielder: 2, Forward: 3 };
-    const sorted = [...players].sort((a, b) => {
-      const pa = posOrder[a.pos_group] ?? 9, pb = posOrder[b.pos_group] ?? 9;
-      return pa - pb || a.name.localeCompare(b.name);
-    });
+    const sorted = [...players].sort((a, b) => (b.salary_pw_raw || 0) - (a.salary_pw_raw || 0));
 
     const cards = document.getElementById('mapPanelCards');
     cards.innerHTML = '';
@@ -3662,9 +3736,107 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
     document.getElementById('mapPanel').classList.add('hidden');
   });
 
+  // ── Feedback Modal ────────────────────────────────────────
+  // DOMContentLoaded ensures the modal HTML (placed after the script block) is parsed first
+  document.addEventListener('DOMContentLoaded', function () {
+    const FEEDBACK_APP_ID = 'b77259bc-ad24-4378-9444-56c89945dd44';
+    const FEEDBACK_API    = 'https://api.devlab502.net/posts';
+
+    const modal        = document.getElementById('feedbackModal');
+    const fbClose      = document.getElementById('fbClose');
+    const fbForm       = document.getElementById('fbForm');
+    const fbStatus     = document.getElementById('fbStatus');
+    const fbSubmitBtn  = document.getElementById('fbSubmitBtn');
+
+    let formOpenTime = 0;
+
+    window.openFeedbackModal = function () {
+      modal.hidden = false;
+      fbStatus.hidden = true;
+      fbForm.reset();
+      navDropdown.classList.remove('open');
+      formOpenTime = Date.now();
+    };
+
+    function closeModal() { modal.hidden = true; }
+
+    fbClose.addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+
+    fbForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(fbForm));
+
+      if (data.website) { closeModal(); return; }
+      if (Date.now() - formOpenTime < 3000) { showStatus('Please wait a moment before submitting.', 'error'); return; }
+      if (!data.title.trim()) { showStatus('Please add a title.', 'error'); return; }
+
+      fbSubmitBtn.disabled    = true;
+      fbSubmitBtn.textContent = 'Submitting\u2026';
+
+      try {
+        const res = await fetch(FEEDBACK_API, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({
+            app_id:      FEEDBACK_APP_ID,
+            type:        data.type || 'general',
+            title:       data.title.trim(),
+            body:        data.body.trim() || null,
+            author_name: 'Arsenal Report User',
+            tags:        [],
+            images:      [],
+          }),
+        });
+        if (!res.ok) throw new Error('Server error ' + res.status);
+        showStatus('Thanks! Your feedback was submitted.', 'success');
+        fbForm.reset();
+        setTimeout(closeModal, 2200);
+      } catch {
+        showStatus('Something went wrong. Try again or visit the feedback site directly.', 'error');
+      } finally {
+        fbSubmitBtn.disabled    = false;
+        fbSubmitBtn.textContent = 'Submit';
+      }
+    });
+
+    function showStatus(msg, type) {
+      fbStatus.textContent = msg;
+      fbStatus.className   = 'fb-status fb-status-' + type;
+      fbStatus.hidden      = false;
+    }
+  });
+
   // Initial render — fetch from API first
   loadData();
 
 </script>
+
+<div id="feedbackModal" class="fb-overlay" hidden>
+  <div class="fb-modal-card">
+    <div class="fb-modal-header">
+      <span>Feedback</span>
+      <button class="fb-close" id="fbClose" aria-label="Close">&#x2715;</button>
+    </div>
+    <div id="fbFormScreen" class="fb-screen">
+      <form id="fbForm" autocomplete="off">
+        <input name="website" style="display:none" tabindex="-1" autocomplete="off">
+        <select name="type" class="fb-select">
+          <option value="general">&#x1F4AC; General</option>
+          <option value="bug">&#x1F41B; Bug Report</option>
+          <option value="feature">&#x2728; Feature Request</option>
+        </select>
+        <input name="title" class="fb-input" placeholder="Summary (required)" maxlength="255" required>
+        <textarea name="body" class="fb-textarea" placeholder="Details (optional)" rows="4"></textarea>
+        <button type="submit" class="fb-submit-btn" id="fbSubmitBtn">Submit</button>
+      </form>
+      <div id="fbStatus" class="fb-status" hidden></div>
+      <a href="https://feedback.devlab502.net/?app_id=b77259bc-ad24-4378-9444-56c89945dd44&amp;sidebar=collapsed" target="_blank" rel="noopener noreferrer" class="fb-choice-btn fb-choice-secondary" style="margin-top:8px">View All Feedback &rarr;</a>
+      <p class="fb-choice-desc">Browse all feedback at feedback.devlab502.net</p>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

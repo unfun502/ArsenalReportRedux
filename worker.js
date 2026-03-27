@@ -14,11 +14,11 @@ const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' cdnjs.cloudflare.com https://learning-grouper-25.clerk.accounts.dev",
+    "script-src 'self' 'unsafe-inline' cdnjs.cloudflare.com https://learning-grouper-25.clerk.accounts.dev analytics.devlab502.net https://browser.sentry-cdn.com",
     "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
     "font-src fonts.gstatic.com",
     "img-src 'self' cdn.devlab502.net data: https://img.clerk.com",
-    "connect-src 'self' https://learning-grouper-25.clerk.accounts.dev https://clerk.learning-grouper-25.clerk.accounts.dev",
+    "connect-src 'self' https://learning-grouper-25.clerk.accounts.dev https://clerk.learning-grouper-25.clerk.accounts.dev analytics.devlab502.net https://*.ingest.us.sentry.io",
     "frame-src https://learning-grouper-25.clerk.accounts.dev https://accounts.google.com",
   ].join('; '),
 };
@@ -131,6 +131,20 @@ async function handlePublicProxy(url) {
   });
 }
 
+function injectAnalytics(response, env) {
+  const ct = response.headers.get('content-type') || ''
+  if (ct.includes('text/html') && env.UMAMI_SITE_ID) {
+    return new HTMLRewriter()
+      .on('head', {
+        element(el) {
+          el.append(`<script defer src="https://analytics.devlab502.net/script.js" data-website-id="${env.UMAMI_SITE_ID}"></script>`, { html: true })
+        }
+      })
+      .transform(response)
+  }
+  return response
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -153,7 +167,7 @@ export default {
       );
       const headers = new Headers(response.headers);
       for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-      return new Response(response.body, { status: response.status, headers });
+      return injectAnalytics(new Response(response.body, { status: response.status, headers }), env);
     } catch {
       try {
         const fallback = await getAssetFromKV(
@@ -167,7 +181,7 @@ export default {
         );
         const headers = new Headers(fallback.headers);
         for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-        return new Response(fallback.body, { status: 200, headers });
+        return injectAnalytics(new Response(fallback.body, { status: 200, headers }), env);
       } catch {
         return new Response('Not Found', { status: 404 });
       }
