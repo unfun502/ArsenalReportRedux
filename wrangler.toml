@@ -2,5 +2,8 @@ name = "arsenalreportredux"
 main = "worker.js"
 compatibility_date = "2025-01-01"
 
+[vars]
+UMAMI_SITE_ID = "de17b826-bf03-441d-92a2-434e6ad21ca5"
+
 [site]
 bucket = "./public"
