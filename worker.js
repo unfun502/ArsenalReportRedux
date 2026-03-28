@@ -14,11 +14,11 @@ const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' cdnjs.cloudflare.com https://learning-grouper-25.clerk.accounts.dev analytics.devlab502.net https://browser.sentry-cdn.com",
+    "script-src 'self' 'unsafe-inline' blob: cdnjs.cloudflare.com https://learning-grouper-25.clerk.accounts.dev analytics.devlab502.net https://browser.sentry-cdn.com",
     "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
     "font-src fonts.gstatic.com",
     "img-src 'self' cdn.devlab502.net data: https://img.clerk.com",
-    "connect-src 'self' https://learning-grouper-25.clerk.accounts.dev https://clerk.learning-grouper-25.clerk.accounts.dev analytics.devlab502.net https://*.ingest.us.sentry.io",
+    "connect-src 'self' https://learning-grouper-25.clerk.accounts.dev https://clerk.learning-grouper-25.clerk.accounts.dev analytics.devlab502.net https://*.ingest.us.sentry.io https://browser.sentry-cdn.com",
     "frame-src https://learning-grouper-25.clerk.accounts.dev https://accounts.google.com",
   ].join('; '),
 };
