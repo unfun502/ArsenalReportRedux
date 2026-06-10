@@ -12,6 +12,7 @@ const SECURITY_HEADERS = {
   'X-Frame-Options': 'SAMEORIGIN',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   'Content-Security-Policy': [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' blob: cdnjs.cloudflare.com https://learning-grouper-25.clerk.accounts.dev analytics.devlab502.net https://browser.sentry-cdn.com",
@@ -20,6 +21,9 @@ const SECURITY_HEADERS = {
     "img-src 'self' cdn.devlab502.net data: https://img.clerk.com",
     "connect-src 'self' https://learning-grouper-25.clerk.accounts.dev https://clerk.learning-grouper-25.clerk.accounts.dev analytics.devlab502.net https://*.ingest.us.sentry.io https://browser.sentry-cdn.com",
     "frame-src https://learning-grouper-25.clerk.accounts.dev https://accounts.google.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "object-src 'none'",
   ].join('; '),
 };
 
