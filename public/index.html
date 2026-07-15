@@ -1903,7 +1903,7 @@
       </thead>
       <tbody id="finBody"></tbody>
     </table>
-    <p class="fin-footnote">"Transfer Fee Amort" is the Transfer Fee spread over a five year period (20% per year). William Saliba has no amortized transfer fee because he's been with the club over 5 years. I am aware that the actual accounting is much more complicated, this is a rough measure.</p>
+    <p class="fin-footnote">"Transfer Fee Amort" is the Transfer Fee spread evenly over the player's initial contract length (assumed 5 years — the current UEFA cap — unless the reported deal was shorter). William Saliba has no amortized transfer fee because his fee is fully amortized. Real club accounting is more complicated (extensions re-spread the remaining book value, and those terms aren't public), so treat this as a good-faith estimate.</p>
   </div>
   <div id="finViz" style="display:none;"></div>
 </div>
@@ -2063,22 +2063,18 @@ function isoToDob(iso) {
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return d.getUTCDate() + ' ' + months[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
 }
-function calcContractYrs(expiration) {
-  if (!expiration) return null;
-  const days = (new Date(expiration) - new Date()) / (1000 * 60 * 60 * 24);
-  return Math.max(0, Math.ceil(days / 365.25));
-}
-function calcAmortRaw(type, feeRaw, yearSigned) {
-  const yr = new Date().getFullYear();
-  if (type !== 'Transfer' || !feeRaw || !yearSigned) return 0;
-  return (yr - yearSigned) < 5 ? Math.round(feeRaw * 1e6 / 5) : 0;
+function fmtXferDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
 }
 async function loadData() {
   const grid = document.getElementById('grid');
   if (grid) grid.innerHTML = '<div style="padding:32px;text-align:center;color:#555">Loading squad…</div>';
   try {
     const [playersRes, formationRes] = await Promise.all([
-      fetch('/api/players?active=eq.true&order=salary_py_raw.desc.nullslast'),
+      fetch('/api/squad?order=salary_py_raw.desc.nullslast'),
       fetch('/api/formation_slots?order=row_order.asc,slot_order.asc'),
     ]);
     const apiPlayers = await playersRes.json();
@@ -2093,22 +2089,22 @@ async function loadData() {
       salary: fmtPW(p.salary_pw_raw),
       annual: fmtPY(p.salary_py_raw),
       fee:    fmtFee(p.transfer_type, p.transfer_fee_raw),
-      yrs:    calcContractYrs(p.expiration),
+      yrs:    p.contract_yrs,
     }));
 
     FIN_PLAYERS = PLAYERS.map(p => {
-      const amortRaw = calcAmortRaw(p.transfer_type, p.transfer_fee_raw, p.year_signed);
+      const amortRaw = p.amort_raw || 0;
       const fullCostRaw = (p.salary_py_raw || 0) + amortRaw;
       return {
         num:         p.squad_num,
         name:        p.name,
         pos:         p.pos_group,
         dob:         p.dob,
-        yrs:         calcContractYrs(p.expiration),
+        yrs:         p.contract_yrs,
         salaryPW:    fmtPW(p.salary_pw_raw),
         salaryPY:    fmtPY(p.salary_py_raw),
         fee:         fmtFee(p.transfer_type, p.transfer_fee_raw),
-        amort:       amortRaw > 0 ? '€' + (p.transfer_fee_raw / 5).toFixed(1) + 'm' : '—',
+        amort:       amortRaw > 0 ? '€' + (p.transfer_fee_raw / p.amort_years).toFixed(1) + 'm' : '—',
         salaryPWRaw: p.salary_pw_raw || 0,
         salaryPYRaw: p.salary_py_raw || 0,
         feeRaw:      p.transfer_fee_raw || 0,
@@ -2118,11 +2114,18 @@ async function loadData() {
       };
     });
 
-    // Convert flat slots to nested FORMATION structure
+    // Convert flat slots to nested FORMATION structure.
+    // Slots store player ids; resolve to short display names (last name token).
+    const byId = new Map(PLAYERS.map(p => [p.id, p]));
+    const lastName = id => {
+      const p = byId.get(id);
+      return p ? p.name.trim().split(' ').pop() : null;
+    };
     const rowMap = {};
     apiSlots.forEach(s => {
       if (!rowMap[s.row_name]) rowMap[s.row_name] = { row: s.row_name, order: s.row_order, slots: [] };
-      rowMap[s.row_name].slots.push({ pos: s.pos, players: s.player_names || [] });
+      const names = (s.player_ids || []).map(lastName).filter(Boolean);
+      rowMap[s.row_name].slots.push({ pos: s.pos, players: names });
     });
     FORMATION = Object.values(rowMap).sort((a, b) => a.order - b.order);
 
@@ -2246,12 +2249,12 @@ function openDetail(p) {
       <div class="stat-value">${p.salary}</div>
     </div>
     <div class="stat-cell">
-      <div class="stat-label">Annual Salary (25/26)</div>
+      <div class="stat-label">Annual Salary (${p.current_season || '25/26'})</div>
       <div class="stat-value accent">${annualFmt}</div>
     </div>
     <div class="stat-cell">
       <div class="stat-label">Transfer Date</div>
-      <div class="stat-value">${p.transfer_date || '—'}</div>
+      <div class="stat-value">${fmtXferDate(p.transfer_date) || '—'}</div>
     </div>
     <div class="stat-cell">
       <div class="stat-label">Transfer Fee</div>
@@ -2483,10 +2486,10 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
   // ── "How the team was built" animation ──────────────────────────────────
 
   function getTransferYear(p) {
-    if (p.transfer_type === 'Academy') return p.year_signed;
+    // Calendar year the player arrived (transfer_date is an ISO date);
+    // Academy players fall back to year_signed (year they joined).
     if (p.transfer_date) {
-      const parts = p.transfer_date.trim().split(/\s+/);
-      const yr = parseInt(parts[parts.length - 1]);
+      const yr = parseInt(p.transfer_date.slice(0, 4));
       if (!isNaN(yr)) return yr;
     }
     return p.year_signed;

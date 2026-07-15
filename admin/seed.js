@@ -88,10 +88,18 @@ const formation = [
 
 // ── Seed ────────────────────────────────────────────────────────────────────
 
+const SEED_SEASON = '25/26'; // must match app_settings.current_season
+
 async function seed() {
+  // players table no longer stores salary or contract years — salaries go to
+  // salary_history below, weekly pay and contract years are computed in the
+  // squad view. year_signed is kept as a fallback (Academy joined-year; for
+  // transfers the view derives it from transfer_date once import-excel runs).
+  const playerRows = players.map(({ salary_pw_raw, salary_py_raw, contract_yrs, ...rest }) => rest);
+
   // Normalize: ensure all player objects share the same keys (PostgREST requirement)
-  const allKeys = [...new Set(players.flatMap(p => Object.keys(p)))];
-  const normalized = players.map(p => {
+  const allKeys = [...new Set(playerRows.flatMap(p => Object.keys(p)))];
+  const normalized = playerRows.map(p => {
     const obj = {};
     allKeys.forEach(k => { obj[k] = k in p ? p[k] : null; });
     return obj;
@@ -100,11 +108,30 @@ async function seed() {
   const inserted = await post('/players', normalized);
   console.log(`  ✓ ${inserted.length} players inserted`);
 
-  console.log(`Seeding ${formation.length} formation slots...`);
-  await post('/formation_slots', formation);
+  // Lookup maps from the inserted rows (which now carry ids)
+  const idByName = new Map(inserted.map(p => [p.name, p.id]));
+  const idByLastName = new Map(inserted.map(p => [p.name.trim().split(' ').pop(), p.id]));
+
+  const salaryRows = players
+    .filter(p => p.salary_py_raw)
+    .map(p => ({ player_id: idByName.get(p.name), season: SEED_SEASON, salary_py_raw: p.salary_py_raw }));
+  console.log(`Seeding ${salaryRows.length} salary_history rows (${SEED_SEASON})...`);
+  await post('/salary_history', salaryRows);
+  console.log(`  ✓ Salary history seeded`);
+
+  const slots = formation.map(({ player_names, ...rest }) => ({
+    ...rest,
+    player_ids: player_names.map(n => {
+      const id = idByLastName.get(n);
+      if (!id) throw new Error(`Formation name "${n}" did not resolve to a player id`);
+      return id;
+    }),
+  }));
+  console.log(`Seeding ${slots.length} formation slots...`);
+  await post('/formation_slots', slots);
   console.log(`  ✓ Formation seeded`);
 
-  console.log('\nDone! Run npm run import-excel next to add transfer dates and salary history.');
+  console.log('\nDone! Run npm run import-excel next to add transfer dates and remaining salary history.');
 }
 
 seed().catch(err => { console.error(err); process.exit(1); });

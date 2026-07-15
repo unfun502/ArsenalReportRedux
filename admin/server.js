@@ -78,9 +78,15 @@ async function pgrest(method, path, body) {
 
 // ── Players ────────────────────────────────────────────────────────────────
 
-// GET /api/players — all players (including inactive)
+// GET /api/players — all players (including inactive), with salary history embedded
 app.get('/api/players', async (req, res) => {
-  const { status, data } = await pgrest('GET', '/players?order=squad_num.asc.nullslast');
+  const { status, data } = await pgrest('GET', '/players?select=*,salary_history(season,salary_py_raw)&order=squad_num.asc.nullslast');
+  res.status(status).json(data);
+});
+
+// GET /api/settings — app settings (current_season etc.)
+app.get('/api/settings', async (req, res) => {
+  const { status, data } = await pgrest('GET', '/app_settings');
   res.status(status).json(data);
 });
 
@@ -155,7 +161,7 @@ app.get('/api/formation', async (req, res) => {
   res.status(status).json(data);
 });
 
-// PUT /api/formation/:id — update a slot (player_names array)
+// PUT /api/formation/:id — update a slot (player_ids array)
 app.put('/api/formation/:id', async (req, res) => {
   const { status, data } = await pgrest('PATCH', `/formation_slots?id=eq.${req.params.id}`, req.body);
   res.status(status).json(data);

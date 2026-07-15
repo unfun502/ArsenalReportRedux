@@ -388,11 +388,11 @@
         </div>
         <div class="form-group">
           <label class="form-label">Transfer Date</label>
-          <input class="form-input" type="text" id="fXferDate" placeholder="e.g. Jun 2023">
+          <input class="form-input" type="date" id="fXferDate">
         </div>
         <div class="form-group">
-          <label class="form-label">Year Signed (end-of-year)</label>
-          <input class="form-input" type="number" id="fYearSigned" placeholder="e.g. 2023">
+          <label class="form-label">Year Joined (Academy only)</label>
+          <input class="form-input" type="number" id="fYearSigned" placeholder="e.g. 2018">
         </div>
         <div class="form-group">
           <label class="form-label">Contract Signed</label>
@@ -407,12 +407,8 @@
           <input class="form-input" type="text" id="fContractYrs" readonly placeholder="auto-calculated">
         </div>
         <div class="form-group">
-          <label class="form-label">Weekly Salary (€ raw)</label>
-          <input class="form-input" type="text" id="fSalaryPW" placeholder="e.g. €250,000">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Annual Salary 25/26 (€ raw)</label>
-          <input class="form-input" type="text" id="fSalaryPY" placeholder="e.g. €13,000,000">
+          <label class="form-label">Amortization Years (initial contract)</label>
+          <input class="form-input" type="number" id="fAmortYears" min="1" max="10" placeholder="5">
         </div>
         <div class="form-group">
           <label class="form-label">FBref ID</label>
@@ -430,6 +426,7 @@
 
       <!-- Salary history -->
       <div class="section-title">Salary History</div>
+      <p style="font-size:12px;color:var(--muted);margin:4px 0 8px">The current season's row here is the player's current salary (weekly = annual ÷ 52, computed automatically).</p>
       <table class="sal-table" id="salHistTable">
         <thead><tr><th>Season</th><th>Annual (€ raw)</th></tr></thead>
         <tbody id="salHistBody"><tr><td colspan="2" class="sal-empty">—</td></tr></tbody>
@@ -547,10 +544,26 @@ function formatSalaryInput(input) {
 
 // ── Player table ───────────────────────────────────────────────────────────
 let allPlayers = [];
+let CURRENT_SEASON = '25/26';
+
+// Current-season annual salary from the embedded salary_history rows
+function curSalary(p) {
+  const row = (p.salary_history || []).find(s => s.season === CURRENT_SEASON);
+  return row ? row.salary_py_raw : null;
+}
+
+function lastNameOf(p) {
+  return p.name.trim().split(' ').pop();
+}
 
 async function loadPlayers() {
   try {
-    allPlayers = await adminFetch('/players?order=name');
+    const [players, settings] = await Promise.all([
+      adminFetch('/players?select=*,salary_history(season,salary_py_raw)&order=name'),
+      adminFetch('/app_settings?key=eq.current_season'),
+    ]);
+    CURRENT_SEASON = (settings && settings[0] && settings[0].value) || CURRENT_SEASON;
+    allPlayers = players;
     renderPlayerTable();
   } catch (err) {
     document.getElementById('playerTableBody').innerHTML =
@@ -583,8 +596,8 @@ function renderPlayerTable() {
       <td style="color:var(--muted)">${p.squad_num ?? '—'}</td>
       <td style="font-weight:600">${p.name}</td>
       <td style="color:var(--muted)">${p.pos || '—'}</td>
-      <td>${fmtEuro(p.salary_pw_raw)}</td>
-      <td>${fmtEuro(p.salary_py_raw)}</td>
+      <td>${fmtEuro(curSalary(p) ? Math.round(curSalary(p) / 52) : null)}</td>
+      <td>${fmtEuro(curSalary(p))}</td>
       <td style="color:var(--muted);white-space:nowrap">${p.expiration ? p.expiration.slice(0,10) : '—'}</td>
       <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
       <td>
@@ -624,6 +637,7 @@ function openAddPlayer() {
   document.getElementById('playerForm').reset();
   document.getElementById('fActive').checked = true;
   document.getElementById('fContractYrs').value = '';
+  document.getElementById('fAmortYears').value = 5;
   document.getElementById('salHistBody').innerHTML = '<tr><td colspan="2" class="sal-empty">—</td></tr>';
   setModalStatus('');
   document.getElementById('playerModal').style.display = 'flex';
@@ -649,8 +663,7 @@ async function openEditPlayer(id) {
   document.getElementById('fSigned').value = p.signed ? p.signed.slice(0,10) : '';
   document.getElementById('fExpiration').value = p.expiration ? p.expiration.slice(0,10) : '';
   document.getElementById('fContractYrs').value = calcContractYrs(p.expiration) ?? '';
-  document.getElementById('fSalaryPW').value = p.salary_pw_raw ? '€' + p.salary_pw_raw.toLocaleString() : '';
-  document.getElementById('fSalaryPY').value = p.salary_py_raw ? '€' + p.salary_py_raw.toLocaleString() : '';
+  document.getElementById('fAmortYears').value = p.amort_years ?? 5;
   document.getElementById('fFbrefId').value = p.fbref_id ?? '';
   document.getElementById('fFbrefUrl').value = p.fbref_url ?? '';
   document.getElementById('fImgUrl').value = p.img_url ?? '';
@@ -672,8 +685,6 @@ document.getElementById('fExpiration').addEventListener('change', function () {
 });
 
 // Salary euro formatting
-formatSalaryInput(document.getElementById('fSalaryPW'));
-formatSalaryInput(document.getElementById('fSalaryPY'));
 formatSalaryInput(document.getElementById('salAmount'));
 
 // ── Salary history ─────────────────────────────────────────────────────────
@@ -715,6 +726,7 @@ document.getElementById('addSalBtn').addEventListener('click', async () => {
     document.getElementById('salSeason').value = '';
     document.getElementById('salAmount').value = '';
     await loadSalHistory(editPlayerId);
+    await loadPlayers(); // refresh table — current-season salary may have changed
     setModalStatus('Season added', 'ok');
     setTimeout(() => setModalStatus(''), 2000);
   } catch (err) {
@@ -737,12 +749,11 @@ document.getElementById('playerForm').addEventListener('submit', async (e) => {
     nationality:      document.getElementById('fNat').value.trim() || null,
     transfer_type:    document.getElementById('fXferType').value || null,
     transfer_fee_raw: parseFloat(document.getElementById('fXferFee').value) || null,
-    transfer_date:    document.getElementById('fXferDate').value.trim() || null,
+    transfer_date:    document.getElementById('fXferDate').value || null,
     year_signed:      parseInt(document.getElementById('fYearSigned').value) || null,
     signed:           document.getElementById('fSigned').value || null,
     expiration:       document.getElementById('fExpiration').value || null,
-    salary_pw_raw:    parseEuro(document.getElementById('fSalaryPW').value),
-    salary_py_raw:    parseEuro(document.getElementById('fSalaryPY').value),
+    amort_years:      parseInt(document.getElementById('fAmortYears').value) || 5,
     fbref_id:         document.getElementById('fFbrefId').value.trim() || null,
     fbref_url:        document.getElementById('fFbrefUrl').value.trim() || null,
     img_url:          document.getElementById('fImgUrl').value.trim() || null,
@@ -815,8 +826,11 @@ function renderFormation() {
           <div class="slot-card" onclick="openSlotModal(${s.id})">
             <div class="slot-pos">${s.pos}</div>
             <div class="slot-names">
-              ${(s.player_names && s.player_names.length)
-                ? s.player_names.map(n => `<div class="slot-name">${n}</div>`).join('')
+              ${(s.player_ids && s.player_ids.length)
+                ? s.player_ids.map(id => {
+                    const p = allPlayers.find(x => x.id === id);
+                    return `<div class="slot-name">${p ? lastNameOf(p) : '#' + id}</div>`;
+                  }).join('')
                 : '<div class="slot-empty">Empty</div>'}
             </div>
           </div>
@@ -834,12 +848,16 @@ function openSlotModal(id) {
   document.getElementById('slotModalTitle').textContent = `Edit — ${slot.pos}`;
   document.getElementById('slotModalStatus').className = 'status-msg';
 
-  const names = (slot.player_names || []).concat(['', '', '']).slice(0, 3);
+  const ids = (slot.player_ids || []).concat([null, null, null]).slice(0, 3);
   const labels = ['Starter', 'Backup 1', 'Backup 2'];
-  document.getElementById('slotNamesEditor').innerHTML = names.map((n, i) => `
+  const activePlayers = allPlayers.filter(p => p.active).sort((a, b) => a.name.localeCompare(b.name));
+  const options = sel => ['<option value="">—</option>']
+    .concat(activePlayers.map(p => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${p.name}</option>`))
+    .join('');
+  document.getElementById('slotNamesEditor').innerHTML = ids.map((pid, i) => `
     <div class="slot-name-row">
       <span class="slot-role-label">${labels[i]}</span>
-      <input class="form-input" type="text" value="${n}" data-slot-idx="${i}" placeholder="${labels[i]}">
+      <select class="form-select" data-slot-idx="${i}">${options(pid)}</select>
     </div>
   `).join('');
 
@@ -848,17 +866,17 @@ function openSlotModal(id) {
 
 document.getElementById('slotSaveBtn').addEventListener('click', async () => {
   const id = parseInt(document.getElementById('slotId').value);
-  const inputs = document.querySelectorAll('#slotNamesEditor input');
-  const names = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+  const selects = document.querySelectorAll('#slotNamesEditor select');
+  const ids = Array.from(selects).map(s => parseInt(s.value)).filter(n => !isNaN(n));
 
   try {
     await adminFetch(`/formation_slots?id=eq.${id}`, {
       method: 'PATCH',
       headers: { 'Prefer': 'return=representation' },
-      body: JSON.stringify({ player_names: names }),
+      body: JSON.stringify({ player_ids: ids }),
     });
     const slot = allSlots.find(s => s.id === id);
-    if (slot) slot.player_names = names;
+    if (slot) slot.player_ids = ids;
     renderFormation();
     closeSlotModal();
     showToast('Formation slot saved');

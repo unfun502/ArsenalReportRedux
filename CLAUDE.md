@@ -43,17 +43,35 @@ Local Admin (this laptop only)
 ## Database
 - Postgres 16 on VPS, database `arsenal_report`, schema `arsenal_report`
 - PostgREST at `https://api.devlab502.net/arsenal`
-- Roles: `arsenal_admin` (full write), `anon` (read-only, active players only)
-- Tables: `players`, `salary_history`, `formation_slots`
-- View: `amortization_schedule` (computed from `transfer_fee_raw / 5` × 5 active + 5 zero seasons)
+- Roles: `arsenal_admin` (full write), `anon` (read-only on the public read model only)
+- Tables: `players`, `salary_history`, `formation_slots`, `app_settings`
+- Views: `squad` (public read model), `amortization_schedule`
+- Fresh install: `scripts/schema.sql`. Existing DB changes: `scripts/migrations/`
+
+### squad view (what the public app reads via `/api/squad`)
+Active players joined with their current-season salary. Computed columns:
+- `salary_py_raw` — from `salary_history` at `app_settings.current_season`
+- `salary_pw_raw` — `round(salary_py_raw / 52)`
+- `contract_yrs` — expiration year minus current season start year
+- `year_signed` — derived from `transfer_date` (end-of-year convention: Jul–Dec → year+1);
+  falls back to the stored `players.year_signed` (Academy joined-year)
+- `amort_raw` — this season's amortization charge: `transfer_fee_raw × 1m / amort_years`
+  while within the amortization window, else 0
 
 ### players table key fields
-- `salary_pw_raw` / `salary_py_raw` — raw integers in euros (format client-side)
 - `transfer_fee_raw` — fee in millions (e.g. 75.0 = €75m)
 - `transfer_type` — 'Transfer', 'Academy', 'Loan', 'Free'
-- `transfer_date` / `signed` / `expiration` — ISO date strings
-- `year_signed` — end-of-year convention (e.g. 2024 for Jul 2023 signing)
-- `active` — false for departed/sold players (anon role filters these out)
+- `transfer_date` / `signed` / `expiration` — DATE columns
+- `year_signed` — Academy players only (year joined); derived for transfers
+- `amort_years` — initial contract length for amortization (default 5 = UEFA cap;
+  override in admin when the reported initial deal was shorter)
+- `active` — false for departed/sold players (squad view filters these out)
+- Current salary is NOT stored on players — it's the `salary_history` row for
+  `app_settings.current_season`
+
+### anon (public) can read only
+`squad`, `formation_slots` (`player_ids` arrays reference `players.id`),
+`app_settings`, `amortization_schedule` — not `players` or `salary_history`
 
 ## Admin Authentication
 
@@ -94,9 +112,10 @@ Player images served from Cloudflare R2 via cdn.devlab502.net
 - Set `img_url` field in admin when uploading new player images
 
 ## Seasonal Updates
-To add a new season's salary data for all players:
-1. Update each player's `salary_pw_raw` and `salary_py_raw` in the admin
-2. Insert a new `salary_history` row per player for the new season via the admin's player edit page
+To roll over to a new season:
+1. Insert a new `salary_history` row per player for the new season via the admin's player edit page
+2. Update `app_settings.current_season` (e.g. `'26/27'`) — the squad view, salary display,
+   contract years, and amortization all follow automatically
 
 ## Contact
 devlab502@proton.me

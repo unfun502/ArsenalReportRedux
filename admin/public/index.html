@@ -85,6 +85,13 @@
   <script>
     let allPlayers = [];
     let filterMode = 'all';
+    let CURRENT_SEASON = '25/26';
+
+    // Current-season annual salary from embedded salary_history rows
+    function curSalary(p) {
+      const row = (p.salary_history || []).find(s => s.season === CURRENT_SEASON);
+      return row ? row.salary_py_raw : null;
+    }
 
     const fmt = {
       pw: raw => raw ? '€' + Math.round(raw / 1000) + 'k' : '—',
@@ -101,8 +108,11 @@
     };
 
     async function loadPlayers() {
-      const r = await fetch('/api/players');
-      allPlayers = await r.json();
+      const [pr, sr] = await Promise.all([fetch('/api/players'), fetch('/api/settings')]);
+      allPlayers = await pr.json();
+      const settings = await sr.json().catch(() => []);
+      const cs = Array.isArray(settings) && settings.find(s => s.key === 'current_season');
+      if (cs) CURRENT_SEASON = cs.value;
       render();
     }
 
@@ -132,7 +142,7 @@
           <td><span class="pos-tag">${p.pos}</span></td>
           <td>${p.nationality}</td>
           <td class="text-accent">${fmt.fee(p.transfer_type, p.transfer_fee_raw)}</td>
-          <td>${fmt.pw(p.salary_pw_raw)}</td>
+          <td>${fmt.pw(curSalary(p) ? Math.round(curSalary(p) / 52) : null)}</td>
           <td>${fmt.yrs(p.expiration)}</td>
           <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
           <td class="actions">

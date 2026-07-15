@@ -253,7 +253,9 @@ async function run() {
       const yearSigned = get(row, colMap, 'Year signed (End of Year)');
       const fields = {};
       if (xferDate)   fields.transfer_date = parseDate(xferDate);
-      if (yearSigned !== undefined && yearSigned !== null)
+      // year_signed is derived from transfer_date in the squad view;
+      // only store it when there's no transfer date (Academy players)
+      if (!fields.transfer_date && yearSigned !== undefined && yearSigned !== null)
                       fields.year_signed   = parseNumber(yearSigned);
 
       if (Object.keys(fields).length > 0) {
