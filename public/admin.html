@@ -504,12 +504,13 @@ async function adminFetch(path, opts = {}) {
     ...(opts.headers || {}),
   };
   const res = await fetch(`/api/admin${path}`, { ...opts, headers });
+  const text = await res.text();
   if (!res.ok) {
-    const text = await res.text();
     throw new Error(`${res.status}: ${text}`);
   }
-  const ct = res.headers.get('Content-Type') || '';
-  return ct.includes('application/json') ? res.json() : null;
+  // PostgREST returns 204 with an empty body for PATCH/DELETE without
+  // Prefer: return=representation — don't try to parse that as JSON
+  return text ? JSON.parse(text) : null;
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────
