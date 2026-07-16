@@ -15,6 +15,7 @@ import { createServer } from 'http';
 import open from 'open';
 import multer from 'multer';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { runSquadSync } from '../squad-sync.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -164,6 +165,80 @@ app.get('/api/formation', async (req, res) => {
 // PUT /api/formation/:id — update a slot (player_ids array)
 app.put('/api/formation/:id', async (req, res) => {
   const { status, data } = await pgrest('PATCH', `/formation_slots?id=eq.${req.params.id}`, req.body);
+  res.status(status).json(data);
+});
+
+// ── Pending Updates (squad sync review queue) ──────────────────────────────
+
+// football-data.org position → pos_group
+function mapPosGroup(fdPos) {
+  const s = String(fdPos || '').toLowerCase();
+  if (s.includes('keeper')) return 'Goalkeeper';
+  if (s.includes('defen') || s.includes('back')) return 'Defender';
+  if (s.includes('midfield')) return 'Midfielder';
+  if (s.includes('forward') || s.includes('wing') || s.includes('attack') || s.includes('offence')) return 'Forward';
+  return 'Midfielder';
+}
+
+// GET /api/updates — pending review items
+app.get('/api/updates', async (req, res) => {
+  const { status, data } = await pgrest('GET', '/pending_updates?status=eq.pending&order=created_at.desc');
+  res.status(status).json(data);
+});
+
+// POST /api/updates/sync — run the squad sync on demand
+app.post('/api/updates/sync', async (req, res) => {
+  try {
+    const summary = await runSquadSync({
+      fdToken: process.env.FOOTBALL_DATA_TOKEN,
+      postgrestUrl: POSTGREST_URL,
+      adminJwt: ADMIN_JWT,
+    });
+    res.json(summary);
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// POST /api/updates/:id/approve — apply the change, mark approved
+app.post('/api/updates/:id/approve', async (req, res) => {
+  const { data: rows } = await pgrest('GET', `/pending_updates?id=eq.${req.params.id}&status=eq.pending`);
+  const upd = Array.isArray(rows) ? rows[0] : null;
+  if (!upd) return res.status(404).json({ error: 'Pending update not found' });
+
+  let applied;
+  if (upd.kind === 'possible_departure') {
+    applied = await pgrest('PATCH', `/players?id=eq.${upd.player_id}`, { active: false });
+  } else if (upd.kind === 'squad_num_change') {
+    applied = await pgrest('PATCH', `/players?id=eq.${upd.player_id}`, { squad_num: parseInt(upd.new_value, 10) });
+  } else if (upd.kind === 'new_player') {
+    const p = upd.payload || {};
+    applied = await pgrest('POST', '/players', {
+      name: upd.subject,
+      pos: p.position || 'TBD',
+      pos_group: mapPosGroup(p.position),
+      dob: p.dateOfBirth || null,
+      nationality: p.nationality || 'TBD',
+      squad_num: p.shirtNumber ?? null,
+      transfer_type: 'Transfer',
+      active: true,
+    });
+  } else {
+    return res.status(400).json({ error: `Unknown kind: ${upd.kind}` });
+  }
+  if (applied.status >= 300) return res.status(applied.status).json(applied.data);
+
+  const { status, data } = await pgrest('PATCH', `/pending_updates?id=eq.${upd.id}`,
+    { status: 'approved', resolved_at: new Date().toISOString() });
+  // For new players, hand back the created row so the UI can open the edit page
+  const created = upd.kind === 'new_player' && Array.isArray(applied.data) ? applied.data[0] : null;
+  res.status(status).json({ update: Array.isArray(data) ? data[0] : data, created_player: created });
+});
+
+// POST /api/updates/:id/dismiss — reject; never shown again (dedupe key stays)
+app.post('/api/updates/:id/dismiss', async (req, res) => {
+  const { status, data } = await pgrest('PATCH', `/pending_updates?id=eq.${req.params.id}&status=eq.pending`,
+    { status: 'dismissed', resolved_at: new Date().toISOString() });
   res.status(status).json(data);
 });
 

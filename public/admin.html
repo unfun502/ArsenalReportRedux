@@ -275,6 +275,7 @@
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="players">Players</button>
       <button class="tab-btn" data-tab="formation">Formation</button>
+      <button class="tab-btn" data-tab="updates">Updates</button>
     </div>
 
     <!-- Players tab -->
@@ -320,6 +321,15 @@
       <div class="formation-grid" id="formationGrid">
         <p style="color:var(--muted)">Loading…</p>
       </div>
+    </div>
+
+    <!-- Updates tab (squad sync review queue) -->
+    <div id="tabUpdates" style="display:none">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
+        Squad changes detected by the daily sync against football-data.org.
+        Approve to apply, dismiss to ignore forever.
+      </p>
+      <div id="updatesList"><p style="color:var(--muted)">Loading…</p></div>
     </div>
   </div>
 </div>
@@ -893,6 +903,115 @@ document.getElementById('slotModal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeSlotModal();
 });
 
+// ── Updates (squad sync review queue) ──────────────────────────────────────
+let pendingUpdates = [];
+
+const UPD_KIND_LABEL = {
+  new_player: 'New signing?',
+  possible_departure: 'Departure?',
+  squad_num_change: 'Shirt number',
+};
+
+// football-data.org position → pos_group
+function mapPosGroup(fdPos) {
+  const s = String(fdPos || '').toLowerCase();
+  if (s.includes('keeper')) return 'Goalkeeper';
+  if (s.includes('defen') || s.includes('back')) return 'Defender';
+  if (s.includes('midfield')) return 'Midfielder';
+  if (s.includes('forward') || s.includes('wing') || s.includes('attack') || s.includes('offence')) return 'Forward';
+  return 'Midfielder';
+}
+
+function updDetail(u) {
+  if (u.kind === 'new_player') {
+    const p = u.payload || {};
+    return [p.position, p.dateOfBirth, p.nationality, p.shirtNumber ? '#' + p.shirtNumber : null]
+      .filter(Boolean).join(' · ') || 'In the source squad but not in the database';
+  }
+  if (u.kind === 'possible_departure') return 'Active in the database but missing from the source squad';
+  if (u.kind === 'squad_num_change') return `#${u.old_value} → #${u.new_value}`;
+  return '';
+}
+
+async function loadUpdates() {
+  try {
+    pendingUpdates = await adminFetch('/pending_updates?status=eq.pending&order=created_at.desc');
+    renderUpdates();
+  } catch (err) {
+    document.getElementById('updatesList').innerHTML = `<p style="color:#e74c3c">${err.message}</p>`;
+  }
+}
+
+function renderUpdates() {
+  const list = document.getElementById('updatesList');
+  if (!pendingUpdates.length) {
+    list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:32px">No pending updates — the squad matches the source. 🎉</p>';
+    return;
+  }
+  list.innerHTML = pendingUpdates.map(u => `
+    <div style="background:var(--panel,#171717);border:1px solid var(--border,#2a2a2a);border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+      <span class="badge" style="white-space:nowrap">${UPD_KIND_LABEL[u.kind] || u.kind}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700">${u.subject}</div>
+        <div style="font-size:12px;color:var(--muted)">${updDetail(u)}</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-edit" onclick="approveUpdate(${u.id})">Approve</button>
+        <button class="btn-deactivate" onclick="dismissUpdate(${u.id})">Dismiss</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function approveUpdate(id) {
+  const u = pendingUpdates.find(x => x.id === id);
+  if (!u || !confirm(`Approve: ${UPD_KIND_LABEL[u.kind]} — ${u.subject}?`)) return;
+  try {
+    if (u.kind === 'possible_departure') {
+      await adminFetch(`/players?id=eq.${u.player_id}`, { method: 'PATCH', body: JSON.stringify({ active: false }) });
+    } else if (u.kind === 'squad_num_change') {
+      await adminFetch(`/players?id=eq.${u.player_id}`, { method: 'PATCH', body: JSON.stringify({ squad_num: parseInt(u.new_value) }) });
+    } else if (u.kind === 'new_player') {
+      const p = u.payload || {};
+      await adminFetch('/players', {
+        method: 'POST',
+        headers: { 'Prefer': 'return=representation' },
+        body: JSON.stringify({
+          name: u.subject,
+          pos: p.position || 'TBD',
+          pos_group: mapPosGroup(p.position),
+          dob: p.dateOfBirth || null,
+          nationality: p.nationality || 'TBD',
+          squad_num: p.shirtNumber ?? null,
+          transfer_type: 'Transfer',
+          active: true,
+        }),
+      });
+    }
+    await adminFetch(`/pending_updates?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'approved', resolved_at: new Date().toISOString() }),
+    });
+    showToast(u.kind === 'new_player' ? 'Player created — edit to fill in details' : 'Applied');
+    await Promise.all([loadUpdates(), loadPlayers()]);
+  } catch (err) {
+    showToast(err.message, 'err');
+  }
+}
+
+async function dismissUpdate(id) {
+  try {
+    await adminFetch(`/pending_updates?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'dismissed', resolved_at: new Date().toISOString() }),
+    });
+    showToast('Dismissed — will not be suggested again');
+    await loadUpdates();
+  } catch (err) {
+    showToast(err.message, 'err');
+  }
+}
+
 // ── Tab switching ──────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -901,7 +1020,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     const tab = btn.dataset.tab;
     document.getElementById('tabPlayers').style.display   = tab === 'players'   ? '' : 'none';
     document.getElementById('tabFormation').style.display = tab === 'formation' ? '' : 'none';
+    document.getElementById('tabUpdates').style.display   = tab === 'updates'   ? '' : 'none';
     if (tab === 'formation' && !allSlots.length) loadFormation();
+    if (tab === 'updates') loadUpdates();
   });
 });
 

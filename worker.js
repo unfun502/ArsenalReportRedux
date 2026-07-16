@@ -1,5 +1,6 @@
 import { getAssetFromKV } from '@cloudflare/kv-asset-handler';
 import manifestJSON from '__STATIC_CONTENT_MANIFEST';
+import { runSquadSync } from './squad-sync.js';
 
 const assetManifest = JSON.parse(manifestJSON);
 
@@ -150,6 +151,20 @@ function injectAnalytics(response, env) {
 }
 
 export default {
+  // Daily cron (see wrangler.toml [triggers]): diff the squad against
+  // football-data.org and queue findings in pending_updates for admin review.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(
+      runSquadSync({
+        fdToken: env.FOOTBALL_DATA_TOKEN,
+        postgrestUrl: POSTGREST_BASE,
+        adminJwt: env.ADMIN_JWT,
+      })
+        .then(summary => console.log('squad sync:', JSON.stringify(summary)))
+        .catch(err => console.error('squad sync failed:', err.message))
+    );
+  },
+
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 

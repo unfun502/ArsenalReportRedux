@@ -5,5 +5,12 @@ compatibility_date = "2025-01-01"
 [vars]
 UMAMI_SITE_ID = "de17b826-bf03-441d-92a2-434e6ad21ca5"
 
+# Daily squad sync (06:00 UTC) — diffs the squad against football-data.org
+# and writes findings to pending_updates for admin review.
+# Requires secrets: ADMIN_JWT (already set), FOOTBALL_DATA_TOKEN
+# (free key from https://www.football-data.org/client/register).
+[triggers]
+crons = ["0 6 * * *"]
+
 [site]
 bucket = "./public"

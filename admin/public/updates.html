@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Updates — Arsenal Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e5e5e5; }
+    header { background: #c0392b; padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+    header h1 { font-size: 1.1rem; font-weight: 700; color: #fff; }
+    nav a { color: rgba(255,255,255,.75); text-decoration: none; font-size: .85rem; margin-left: 12px; }
+    nav a:hover, nav a.active { color: #fff; }
+    .container { max-width: 860px; margin: 0 auto; padding: 28px 24px; }
+    h2 { font-size: 1.2rem; margin-bottom: 6px; }
+    .subtitle { font-size: .875rem; color: #666; margin-bottom: 20px; }
+    .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
+    .btn { display: inline-flex; align-items: center; padding: 7px 14px; border-radius: 6px; font-size: .85rem; font-weight: 600; cursor: pointer; border: none; }
+    .btn-primary { background: #c0392b; color: #fff; }
+    .btn-primary:hover { background: #a93226; }
+    .btn-primary:disabled { opacity: .5; cursor: default; }
+    .btn-ok { background: #1a3d2b; color: #4ade80; border: 1px solid #265c40; }
+    .btn-ok:hover { background: #235238; }
+    .btn-no { background: transparent; color: #999; border: 1px solid #333; }
+    .btn-no:hover { color: #f87171; border-color: #f87171; }
+    .btn-sm { padding: 4px 12px; font-size: .8rem; }
+    #status { padding: 10px 14px; border-radius: 6px; font-size: .875rem; margin-bottom: 16px; display: none; }
+    .status-ok { background: #1a3d2b; color: #4ade80; display: block !important; }
+    .status-err { background: #3d1a1a; color: #f87171; display: block !important; }
+    .upd-card { background: #171717; border: 1px solid #2a2a2a; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; }
+    .upd-kind { font-size: .68rem; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+    .kind-new_player { background: #1a3d2b; color: #4ade80; }
+    .kind-possible_departure { background: #3d2a1a; color: #fbbf24; }
+    .kind-squad_num_change { background: #1a2a3d; color: #60a5fa; }
+    .upd-body { flex: 1; min-width: 0; }
+    .upd-subject { font-weight: 700; font-size: .95rem; }
+    .upd-detail { font-size: .8rem; color: #888; margin-top: 2px; }
+    .upd-actions { display: flex; gap: 8px; }
+    .empty { color: #555; text-align: center; padding: 40px 0; }
+    .hint { font-size: .75rem; color: #555; margin-top: 20px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚽ Arsenal Report Admin</h1>
+    <nav>
+      <a href="/">Players</a>
+      <a href="/formation.html">Formation</a>
+      <a href="/updates.html" class="active">Updates</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <div id="status"></div>
+    <h2>Pending Updates</h2>
+    <p class="subtitle">Squad changes detected by the daily sync against football-data.org. Approve to apply, dismiss to ignore forever.</p>
+
+    <div class="toolbar">
+      <button class="btn btn-primary" id="syncBtn" onclick="runSync()">↻ Run sync now</button>
+      <span id="syncInfo" style="font-size:.8rem;color:#666"></span>
+    </div>
+
+    <div id="list"><p class="empty">Loading…</p></div>
+
+    <p class="hint">
+      New player approvals create a minimal player record (name, position group, DOB, nationality) —
+      open the player afterwards to fill in transfer fee, contract dates, salary history, and image.<br>
+      The daily cron runs at 06:00 UTC via the Cloudflare Worker; this button runs the same sync immediately.
+    </p>
+  </div>
+
+  <script>
+    let updates = [];
+
+    const KIND_LABEL = {
+      new_player: 'New signing?',
+      possible_departure: 'Departure?',
+      squad_num_change: 'Shirt number',
+    };
+
+    function detailText(u) {
+      if (u.kind === 'new_player') {
+        const p = u.payload || {};
+        return [p.position, p.dateOfBirth, p.nationality, p.shirtNumber ? '#' + p.shirtNumber : null]
+          .filter(Boolean).join(' · ') || 'In the source squad but not in the database';
+      }
+      if (u.kind === 'possible_departure') return 'In the database as active but missing from the source squad';
+      if (u.kind === 'squad_num_change') return `#${u.old_value} → #${u.new_value}`;
+      return '';
+    }
+
+    async function load() {
+      const r = await fetch('/api/updates');
+      updates = await r.json();
+      render();
+    }
+
+    function render() {
+      const list = document.getElementById('list');
+      if (!Array.isArray(updates) || !updates.length) {
+        list.innerHTML = '<p class="empty">No pending updates — the squad matches the source. 🎉</p>';
+        return;
+      }
+      list.innerHTML = updates.map(u => `
+        <div class="upd-card">
+          <span class="upd-kind kind-${u.kind}">${KIND_LABEL[u.kind] || u.kind}</span>
+          <div class="upd-body">
+            <div class="upd-subject">${u.subject}</div>
+            <div class="upd-detail">${detailText(u)} · ${new Date(u.created_at).toLocaleDateString()}</div>
+          </div>
+          <div class="upd-actions">
+            <button class="btn btn-ok btn-sm" onclick="approve(${u.id})">Approve</button>
+            <button class="btn btn-no btn-sm" onclick="dismiss(${u.id})">Dismiss</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function runSync() {
+      const btn = document.getElementById('syncBtn');
+      btn.disabled = true;
+      document.getElementById('syncInfo').textContent = 'Syncing…';
+      try {
+        const r = await fetch('/api/updates/sync', { method: 'POST' });
+        const s = await r.json();
+        if (!r.ok) throw new Error(s.error || r.status);
+        document.getElementById('syncInfo').textContent = s.skipped
+          ? `Skipped: ${s.reason}`
+          : `Source: ${s.apiPlayers} players · DB: ${s.dbActive} active · findings: ${s.found} (${s.created} new)`;
+        await load();
+      } catch (err) {
+        showStatus('Sync failed: ' + err.message, 'err');
+        document.getElementById('syncInfo').textContent = '';
+      }
+      btn.disabled = false;
+    }
+
+    async function approve(id) {
+      const u = updates.find(x => x.id === id);
+      if (!confirm(`Approve: ${KIND_LABEL[u.kind]} — ${u.subject}?`)) return;
+      const r = await fetch(`/api/updates/${id}/approve`, { method: 'POST' });
+      const data = await r.json();
+      if (r.ok) {
+        showStatus('Applied', 'ok');
+        await load();
+        if (data.created_player?.id && confirm(`${u.subject} created. Open the edit page to fill in details?`)) {
+          location.href = `/player.html?id=${data.created_player.id}`;
+        }
+      } else {
+        showStatus('Error: ' + (data.error || JSON.stringify(data)), 'err');
+      }
+    }
+
+    async function dismiss(id) {
+      const r = await fetch(`/api/updates/${id}/dismiss`, { method: 'POST' });
+      if (r.ok) { showStatus('Dismissed — will not be suggested again', 'ok'); await load(); }
+      else showStatus('Error: ' + (await r.text()), 'err');
+    }
+
+    function showStatus(msg, type) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = type === 'ok' ? 'status-ok' : 'status-err';
+      setTimeout(() => { el.className = ''; }, 4000);
+    }
+
+    load();
+  </script>
+</body>
+</html>

@@ -111,6 +111,21 @@ Player images served from Cloudflare R2 via cdn.devlab502.net
 - Arsenal crest logo is base64-encoded inline in HTML
 - Set `img_url` field in admin when uploading new player images
 
+## Squad Sync (data freshness)
+A daily cron (06:00 UTC, `[triggers]` in wrangler.toml) runs `squad-sync.js` in the
+Worker: it diffs the squad on football-data.org (team 57) against the players table
+and writes findings to `pending_updates` — new signings, possible departures, shirt
+number changes. **Nothing is applied automatically**: the admin reviews each item
+(local admin → Updates page, or /admin.html → Updates tab) and approves or dismisses.
+Dismissed findings never reappear (UNIQUE kind+subject+new_value).
+
+- Secrets: `FOOTBALL_DATA_TOKEN` (Worker secret + `admin/.env`; key lives in
+  1Password → Automation → "Football-Data.org + TheSportsDB", password field)
+- Without the token the cron logs a skip and does nothing
+- "Run sync now" button on the local admin Updates page runs the same sync on demand
+- Approving a new player creates a minimal record (name, pos group, DOB, nationality,
+  shirt #) — fill in fee, contract, salary history, and image afterwards
+
 ## Seasonal Updates
 To roll over to a new season:
 1. Insert a new `salary_history` row per player for the new season via the admin's player edit page
