@@ -355,6 +355,17 @@
             <label for="fActive" style="font-size:13px;color:var(--text)">Player is active</label>
           </div>
         </div>
+        <div class="form-group">
+          <label class="form-label">On Loan</label>
+          <div class="form-check-row" style="height:38px">
+            <input class="form-check" type="checkbox" id="fOnLoan">
+            <label for="fOnLoan" style="font-size:13px;color:var(--text)">Loaned out</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Loan Club</label>
+          <input class="form-input" type="text" id="fLoanClub" placeholder="e.g. Real Betis">
+        </div>
         <div class="form-group form-full">
           <label class="form-label">Full Name *</label>
           <input class="form-input" type="text" id="fName" required>
@@ -610,7 +621,7 @@ function renderPlayerTable() {
       <td>${fmtEuro(curSalary(p) ? Math.round(curSalary(p) / 52) : null)}</td>
       <td>${fmtEuro(curSalary(p))}</td>
       <td style="color:var(--muted);white-space:nowrap">${p.expiration ? p.expiration.slice(0,10) : '—'}</td>
-      <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
+      <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span>${p.on_loan ? ' <span class="badge" style="background:rgba(232,185,35,.12);color:#e8b923">On loan</span>' : ''}</td>
       <td>
         <div class="btn-row">
           <button class="btn-edit" onclick="openEditPlayer(${p.id})">Edit</button>
@@ -679,6 +690,8 @@ async function openEditPlayer(id) {
   document.getElementById('fFbrefUrl').value = p.fbref_url ?? '';
   document.getElementById('fImgUrl').value = p.img_url ?? '';
   document.getElementById('fActive').checked = p.active ?? true;
+  document.getElementById('fOnLoan').checked = p.on_loan ?? false;
+  document.getElementById('fLoanClub').value = p.loan_club ?? '';
 
   setModalStatus('');
   document.getElementById('playerModal').style.display = 'flex';
@@ -769,6 +782,8 @@ document.getElementById('playerForm').addEventListener('submit', async (e) => {
     fbref_url:        document.getElementById('fFbrefUrl').value.trim() || null,
     img_url:          document.getElementById('fImgUrl').value.trim() || null,
     active:           document.getElementById('fActive').checked,
+    on_loan:          document.getElementById('fOnLoan').checked,
+    loan_club:        document.getElementById('fLoanClub').value.trim() || null,
   };
 
   try {
@@ -958,6 +973,7 @@ function renderUpdates() {
       </div>
       <div class="btn-row">
         <button class="btn-edit" onclick="approveUpdate(${u.id})">Approve</button>
+        ${u.kind === 'possible_departure' ? `<button class="btn-edit" style="color:#e8b923;border-color:#8a6d1a" onclick="markLoanUpdate(${u.id})">On loan</button>` : ''}
         <button class="btn-deactivate" onclick="dismissUpdate(${u.id})">Dismiss</button>
       </div>
     </div>
@@ -994,6 +1010,28 @@ async function approveUpdate(id) {
       body: JSON.stringify({ status: 'approved', resolved_at: new Date().toISOString() }),
     });
     showToast(u.kind === 'new_player' ? 'Player created — edit to fill in details' : 'Applied');
+    await Promise.all([loadUpdates(), loadPlayers()]);
+  } catch (err) {
+    showToast(err.message, 'err');
+  }
+}
+
+// "Departure" that is actually a loan: keep the player active, flag on_loan
+async function markLoanUpdate(id) {
+  const u = pendingUpdates.find(x => x.id === id);
+  if (!u) return;
+  const club = prompt(`${u.subject} is out on loan — at which club? (optional)`);
+  if (club === null) return; // cancelled
+  try {
+    await adminFetch(`/players?id=eq.${u.player_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ on_loan: true, loan_club: club.trim() || null }),
+    });
+    await adminFetch(`/pending_updates?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'approved', resolved_at: new Date().toISOString() }),
+    });
+    showToast('Marked as on loan');
     await Promise.all([loadUpdates(), loadPlayers()]);
   } catch (err) {
     showToast(err.message, 'err');

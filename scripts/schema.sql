@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS arsenal_report.players (
   fbref_id         TEXT,
   fbref_url        TEXT,
   img_url          TEXT,                -- cdn.devlab502.net/arsenal-report/...
+  on_loan          BOOLEAN NOT NULL DEFAULT false,  -- loaned out: stays active/on the books
+  loan_club        TEXT,                -- club the player is loaned to
   active           BOOLEAN NOT NULL DEFAULT true,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -148,7 +150,9 @@ SELECT
        THEN ROUND(p.transfer_fee_raw * 1000000 / p.amort_years)::int
        ELSE 0
   END                                                 AS amort_raw,
-  cfg.current_season
+  cfg.current_season,
+  p.on_loan,
+  p.loan_club
 FROM arsenal_report.players p
 CROSS JOIN cfg
 CROSS JOIN LATERAL (

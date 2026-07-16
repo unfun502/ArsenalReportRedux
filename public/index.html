@@ -1379,6 +1379,59 @@
     text-transform: uppercase;
   }
 
+  .fin-loan-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 6px 0 14px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  .fin-loan-toggle input { accent-color: var(--red); }
+  .loan-tag {
+    background: rgba(232, 185, 35, 0.12);
+    border: 1px solid rgba(232, 185, 35, 0.4);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    font-weight: 600;
+    color: #e8b923;
+    text-transform: uppercase;
+    margin-left: 8px;
+  }
+
+  /* Loaned-out players: dimmed card + amber ribbon */
+  .card--loan .card-img img { filter: grayscale(0.55) brightness(0.85); }
+  .loan-badge {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 1;
+    background: rgba(30, 22, 0, 0.85);
+    border: 1px solid #8a6d1a;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    color: #e8b923;
+    text-transform: uppercase;
+  }
+  .loan-banner {
+    grid-column: 1 / -1;
+    background: rgba(232, 185, 35, 0.08);
+    border: 1px solid rgba(232, 185, 35, 0.35);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #e8b923;
+    letter-spacing: 0.5px;
+  }
+
   /* Red stripe bottom of image */
   .card-img-stripe {
     position: absolute;
@@ -1889,6 +1942,10 @@
       <button class="fin-toggle-btn active" id="btnViz">Viz</button>
     </div>
   </div>
+  <label class="fin-loan-toggle">
+    <input type="checkbox" id="finLoanToggle">
+    <span>Include players on loan</span>
+  </label>
   <div class="fin-table-wrap" id="finTableWrap">
     <table class="fin-table" id="finTable">
       <thead>
@@ -2092,27 +2149,7 @@ async function loadData() {
       yrs:    p.contract_yrs,
     }));
 
-    FIN_PLAYERS = PLAYERS.map(p => {
-      const amortRaw = p.amort_raw || 0;
-      const fullCostRaw = (p.salary_py_raw || 0) + amortRaw;
-      return {
-        num:         p.squad_num,
-        name:        p.name,
-        pos:         p.pos_group,
-        dob:         p.dob,
-        yrs:         p.contract_yrs,
-        salaryPW:    fmtPW(p.salary_pw_raw),
-        salaryPY:    fmtPY(p.salary_py_raw),
-        fee:         fmtFee(p.transfer_type, p.transfer_fee_raw),
-        amort:       amortRaw > 0 ? '€' + (p.transfer_fee_raw / p.amort_years).toFixed(1) + 'm' : '—',
-        salaryPWRaw: p.salary_pw_raw || 0,
-        salaryPYRaw: p.salary_py_raw || 0,
-        feeRaw:      p.transfer_fee_raw || 0,
-        amortRaw,
-        fullCostRaw,
-        fullCost:    '€' + (fullCostRaw / 1e6).toFixed(1) + 'm',
-      };
-    });
+    buildFinPlayers();
 
     // Convert flat slots to nested FORMATION structure.
     // Slots store player ids; resolve to short display names (last name token).
@@ -2137,6 +2174,36 @@ async function loadData() {
   }
 }
 
+// Financials: loaned-out players are excluded unless the toggle is on
+let FIN_INCLUDE_LOAN = false;
+
+function buildFinPlayers() {
+  FIN_PLAYERS = PLAYERS
+    .filter(p => !p.on_loan || FIN_INCLUDE_LOAN)
+    .map(p => {
+      const amortRaw = p.amort_raw || 0;
+      const fullCostRaw = (p.salary_py_raw || 0) + amortRaw;
+      return {
+        num:         p.squad_num,
+        name:        p.name,
+        pos:         p.pos_group,
+        dob:         p.dob,
+        yrs:         p.contract_yrs,
+        onLoan:      !!p.on_loan,
+        salaryPW:    fmtPW(p.salary_pw_raw),
+        salaryPY:    fmtPY(p.salary_py_raw),
+        fee:         fmtFee(p.transfer_type, p.transfer_fee_raw),
+        amort:       amortRaw > 0 ? '€' + (p.transfer_fee_raw / p.amort_years).toFixed(1) + 'm' : '—',
+        salaryPWRaw: p.salary_pw_raw || 0,
+        salaryPYRaw: p.salary_py_raw || 0,
+        feeRaw:      p.transfer_fee_raw || 0,
+        amortRaw,
+        fullCostRaw,
+        fullCost:    '€' + (fullCostRaw / 1e6).toFixed(1) + 'm',
+      };
+    });
+}
+
 const personIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
 
 const chevron = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`;
@@ -2156,10 +2223,11 @@ function buildCard(p, i) {
     : `<div class="placeholder-figure">${personIcon}</div>`;
 
   wrap.innerHTML = `
-    <div class="card">
+    <div class="card${p.on_loan ? ' card--loan' : ''}">
       <div class="card-img">
         <div class="squad-num">${p.num || ''}</div>
         <span class="pos-badge">${p.pos.split('/')[0].trim()}</span>
+        ${p.on_loan ? '<span class="loan-badge">On Loan</span>' : ''}
         ${imageContent}
         <div class="card-img-stripe"></div>
       </div>
@@ -2236,6 +2304,7 @@ function openDetail(p) {
   const annualFmt = p.annual; // already formatted as "€X.Xm" by fmtPY()
 
   stats.innerHTML = `
+    ${p.on_loan ? `<div class="loan-banner">Currently on loan${p.loan_club ? ' at ' + p.loan_club : ''} — still under contract at Arsenal</div>` : ''}
     <div class="stat-cell">
       <div class="stat-label">Date of Birth</div>
       <div class="stat-value">${p.dob} <span style="color:var(--muted);font-size:15px">(${age})</span></div>
@@ -2327,6 +2396,9 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
       list = [...list].sort((a, b) => (b.transfer_fee_raw || 0) - (a.transfer_fee_raw || 0));
     }
 
+    // Loaned-out players always group at the end (order otherwise preserved)
+    list = [...list.filter(p => !p.on_loan), ...list.filter(p => p.on_loan)];
+
     list.forEach((p, i) => grid.appendChild(buildCard(p, i)));
   }
 
@@ -2382,6 +2454,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
           <div class="td-player">
             <span class="td-num">${p.num !== null ? p.num : '—'}</span>
             <span>${p.name}</span>
+            ${p.onLoan ? '<span class="loan-tag">Loan</span>' : ''}
           </div>
         </td>
         <td>${p.salaryPW}</td>
@@ -2507,7 +2580,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
 
   function renderBuildTimeline() {
     const yearGroups = {};
-    PLAYERS.forEach(p => {
+    PLAYERS.filter(p => !p.on_loan).forEach(p => {
       const yr = getTransferYear(p);
       if (!yr) return;
       if (!yearGroups[yr]) yearGroups[yr] = [];
@@ -3395,6 +3468,12 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
   document.getElementById('btnData').addEventListener('click', () => setFinView('data'));
   document.getElementById('btnViz').addEventListener('click',  () => setFinView('viz'));
 
+  document.getElementById('finLoanToggle').addEventListener('change', function () {
+    FIN_INCLUDE_LOAN = this.checked;
+    buildFinPlayers();
+    setFinView(document.getElementById('btnData').classList.contains('active') ? 'data' : 'viz');
+  });
+
   // ── Depth Chart: "How the team was built" toggle ──────────────────────
   document.getElementById('buildBtn').addEventListener('click', () => {
     const isActive = document.getElementById('buildBtn').classList.toggle('active');
@@ -3508,7 +3587,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetai
   function _computePlayersByRegion() {
     const result = {};
     Object.keys(MAP_REGIONS).forEach(r => result[r] = []);
-    PLAYERS.forEach(p => {
+    PLAYERS.filter(p => !p.on_loan).forEach(p => {
       const region = NAT_TO_REGION[p.nat];
       if (region) result[region].push(p);
     });

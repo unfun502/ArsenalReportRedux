@@ -170,6 +170,17 @@
             <option value="false">No (departed)</option>
           </select>
         </div>
+        <div class="field">
+          <label>On Loan</label>
+          <select name="on_loan">
+            <option value="false">No</option>
+            <option value="true">Yes (loaned out)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Loan Club</label>
+          <input name="loan_club" placeholder="e.g. Real Betis">
+        </div>
       </div>
 
       <!-- Salary History -->
@@ -387,7 +398,7 @@
 
       ['name','squad_num','nationality','pos','pos_group','dob','transfer_type','transfer_fee_raw',
        'transfer_date','year_signed','amort_years','signed','expiration',
-       'img_url','fbref_url','fbref_id','active'].forEach(key => {
+       'img_url','fbref_url','fbref_id','active','on_loan','loan_club'].forEach(key => {
         const el = form.elements[key];
         if (!el) return;
         let val = typeof el.value === 'string' ? el.value.trim() : el.value;
@@ -396,7 +407,7 @@
           val = parseInt(val, 10);
         } else if (key === 'transfer_fee_raw') {
           val = parseFloat(val);
-        } else if (key === 'active') {
+        } else if (key === 'active' || key === 'on_loan') {
           val = val === 'true';
         }
         data[key] = val;

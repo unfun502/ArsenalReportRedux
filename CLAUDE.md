@@ -66,6 +66,10 @@ Active players joined with their current-season salary. Computed columns:
 - `amort_years` — initial contract length for amortization (default 5 = UEFA cap;
   override in admin when the reported initial deal was shorter)
 - `active` — false for departed/sold players (squad view filters these out)
+- `on_loan` / `loan_club` — loaned-out players stay active (still on the books):
+  shown dimmed with an ON LOAN badge at the end of the squad grid, excluded from
+  financials/map/build-timeline unless the "Include players on loan" toggle is on.
+  The Updates review queue has an "On loan" action for possible_departure findings
 - Current salary is NOT stored on players — it's the `salary_history` row for
   `app_settings.current_season`
 

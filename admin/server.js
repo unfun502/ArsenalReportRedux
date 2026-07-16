@@ -235,6 +235,27 @@ app.post('/api/updates/:id/approve', async (req, res) => {
   res.status(status).json({ update: Array.isArray(data) ? data[0] : data, created_player: created });
 });
 
+// POST /api/updates/:id/loan — "departure" that is actually a loan:
+// keep the player active, flag on_loan (+ optional club), mark approved
+app.post('/api/updates/:id/loan', async (req, res) => {
+  const { data: rows } = await pgrest('GET', `/pending_updates?id=eq.${req.params.id}&status=eq.pending`);
+  const upd = Array.isArray(rows) ? rows[0] : null;
+  if (!upd) return res.status(404).json({ error: 'Pending update not found' });
+  if (upd.kind !== 'possible_departure' || !upd.player_id) {
+    return res.status(400).json({ error: 'Only possible_departure items can be marked as loans' });
+  }
+
+  const applied = await pgrest('PATCH', `/players?id=eq.${upd.player_id}`, {
+    on_loan: true,
+    loan_club: (req.body && req.body.club && String(req.body.club).trim()) || null,
+  });
+  if (applied.status >= 300) return res.status(applied.status).json(applied.data);
+
+  const { status, data } = await pgrest('PATCH', `/pending_updates?id=eq.${upd.id}`,
+    { status: 'approved', resolved_at: new Date().toISOString() });
+  res.status(status).json(Array.isArray(data) ? data[0] : data);
+});
+
 // POST /api/updates/:id/dismiss — reject; never shown again (dedupe key stays)
 app.post('/api/updates/:id/dismiss', async (req, res) => {
   const { status, data } = await pgrest('PATCH', `/pending_updates?id=eq.${req.params.id}&status=eq.pending`,

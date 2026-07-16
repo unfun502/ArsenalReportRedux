@@ -21,6 +21,8 @@
     .btn-primary:disabled { opacity: .5; cursor: default; }
     .btn-ok { background: #1a3d2b; color: #4ade80; border: 1px solid #265c40; }
     .btn-ok:hover { background: #235238; }
+    .btn-loan { background: #3d331a; color: #e8b923; border: 1px solid #8a6d1a; }
+    .btn-loan:hover { background: #4a3f20; }
     .btn-no { background: transparent; color: #999; border: 1px solid #333; }
     .btn-no:hover { color: #f87171; border-color: #f87171; }
     .btn-sm { padding: 4px 12px; font-size: .8rem; }
@@ -110,6 +112,7 @@
           </div>
           <div class="upd-actions">
             <button class="btn btn-ok btn-sm" onclick="approve(${u.id})">Approve</button>
+            ${u.kind === 'possible_departure' ? `<button class="btn btn-loan btn-sm" onclick="markLoan(${u.id})">On loan</button>` : ''}
             <button class="btn btn-no btn-sm" onclick="dismiss(${u.id})">Dismiss</button>
           </div>
         </div>
@@ -149,6 +152,19 @@
       } else {
         showStatus('Error: ' + (data.error || JSON.stringify(data)), 'err');
       }
+    }
+
+    async function markLoan(id) {
+      const u = updates.find(x => x.id === id);
+      const club = prompt(`${u.subject} is out on loan — at which club? (optional)`);
+      if (club === null) return; // cancelled
+      const r = await fetch(`/api/updates/${id}/loan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ club: club.trim() }),
+      });
+      if (r.ok) { showStatus('Marked as on loan — player stays on the books', 'ok'); await load(); }
+      else showStatus('Error: ' + (await r.text()), 'err');
     }
 
     async function dismiss(id) {

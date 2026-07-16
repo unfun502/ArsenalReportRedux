@@ -145,7 +145,7 @@
           <td class="text-accent">${fmt.fee(p.transfer_type, p.transfer_fee_raw)}</td>
           <td>${fmt.pw(curSalary(p) ? Math.round(curSalary(p) / 52) : null)}</td>
           <td>${fmt.yrs(p.expiration)}</td>
-          <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span></td>
+          <td><span class="badge ${p.active ? 'badge-active' : 'badge-inactive'}">${p.active ? 'Active' : 'Inactive'}</span>${p.on_loan ? ` <span class="badge" style="background:#3d331a;color:#e8b923">On loan${p.loan_club ? ' · ' + p.loan_club : ''}</span>` : ''}</td>
           <td class="actions">
             <a href="/player.html?id=${p.id}" class="btn btn-secondary btn-sm">Edit</a>
             <button onclick="toggleActive(${p.id}, ${p.active})" class="btn btn-secondary btn-sm">${p.active ? 'Deactivate' : 'Reactivate'}</button>
