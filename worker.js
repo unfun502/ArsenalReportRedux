@@ -5,8 +5,13 @@ import { runSquadSync } from './squad-sync.js';
 const assetManifest = JSON.parse(manifestJSON);
 
 const POSTGREST_BASE = 'https://api.devlab502.net/arsenal';
-const CLERK_JWKS_URL = 'https://learning-grouper-25.clerk.accounts.dev/.well-known/jwks.json';
-const ADMIN_USER_ID  = 'user_3AdbnJCmquM3NDsW2glzfLxYvGB';
+
+// Cloudflare Access (Zero Trust) — gates /admin.html and /api/admin/* at the
+// edge before this Worker runs; the JWT check below is defense in depth.
+const ACCESS_TEAM_DOMAIN = 'devlab502.cloudflareaccess.com';
+const ACCESS_JWKS_URL    = `https://${ACCESS_TEAM_DOMAIN}/cdn-cgi/access/certs`;
+const ACCESS_AUD         = 'fee3879731b63b8d1de61457c4c5c3143eaaab75ffb8554ff5ba9c0b37a03d36';
+const ADMIN_EMAIL        = 'sandersd@gmail.com';
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -16,12 +21,11 @@ const SECURITY_HEADERS = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' blob: cdnjs.cloudflare.com https://learning-grouper-25.clerk.accounts.dev analytics.devlab502.net https://browser.sentry-cdn.com",
+    "script-src 'self' 'unsafe-inline' blob: cdnjs.cloudflare.com analytics.devlab502.net https://browser.sentry-cdn.com",
     "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
     "font-src fonts.gstatic.com",
-    "img-src 'self' cdn.devlab502.net data: https://img.clerk.com",
-    "connect-src 'self' https://learning-grouper-25.clerk.accounts.dev https://clerk.learning-grouper-25.clerk.accounts.dev analytics.devlab502.net https://*.ingest.us.sentry.io https://browser.sentry-cdn.com",
-    "frame-src https://learning-grouper-25.clerk.accounts.dev https://accounts.google.com",
+    "img-src 'self' cdn.devlab502.net data:",
+    "connect-src 'self' analytics.devlab502.net https://*.ingest.us.sentry.io https://browser.sentry-cdn.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "object-src 'none'",
@@ -33,7 +37,7 @@ let cachedJwks = null;
 
 async function getJwks() {
   if (cachedJwks) return cachedJwks;
-  const res = await fetch(CLERK_JWKS_URL, { cf: { cacheTtl: 3600, cacheEverything: true } });
+  const res = await fetch(ACCESS_JWKS_URL, { cf: { cacheTtl: 3600, cacheEverything: true } });
   cachedJwks = await res.json();
   return cachedJwks;
 }
@@ -44,7 +48,7 @@ function b64url(str) {
   return atob(s + pad);
 }
 
-async function verifyClerkToken(token) {
+async function verifyAccessJwt(token) {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
@@ -53,7 +57,10 @@ async function verifyClerkToken(token) {
     const header  = JSON.parse(b64url(hdr));
     const payload = JSON.parse(b64url(pay));
 
-    if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return null;
+    if (!payload.exp || Math.floor(Date.now() / 1000) > payload.exp) return null;
+    if (payload.iss !== `https://${ACCESS_TEAM_DOMAIN}`) return null;
+    const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+    if (!aud.includes(ACCESS_AUD)) return null;
 
     const jwks = await getJwks();
     const jwk  = jwks.keys.find(k => k.kid === header.kid);
@@ -76,16 +83,17 @@ async function verifyClerkToken(token) {
 }
 
 async function handleAdminProxy(request, url, env) {
-  const auth = request.headers.get('Authorization') || '';
-  if (!auth.startsWith('Bearer ')) {
+  // Access injects this header after authenticating the request at the edge
+  const accessJwt = request.headers.get('Cf-Access-Jwt-Assertion') || '';
+  if (!accessJwt) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  const payload = await verifyClerkToken(auth.slice(7));
-  if (!payload || payload.sub !== ADMIN_USER_ID) {
+  const payload = await verifyAccessJwt(accessJwt);
+  if (!payload || payload.email !== ADMIN_EMAIL) {
     return new Response(JSON.stringify({ error: 'Forbidden' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' },
@@ -168,7 +176,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Admin API: /api/admin/* — Clerk JWT required
+    // Admin API: /api/admin/* — Cloudflare Access JWT required
     if (url.pathname.startsWith('/api/admin/')) {
       return handleAdminProxy(request, url, env);
     }

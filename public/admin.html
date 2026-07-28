@@ -5,12 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Arsenal Report — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet">
-<script
-  async
-  crossorigin="anonymous"
-  data-clerk-publishable-key="pk_test_bGVhcm5pbmctZ3JvdXBlci0yNS5jbGVyay5hY2NvdW50cy5kZXYk"
-  src="https://learning-grouper-25.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
-></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -37,26 +31,12 @@
     transition: color 0.15s, border-color 0.15s;
   }
   .back-link:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
-  #clerkUserBtn { min-width: 32px; min-height: 32px; }
   .admin-badge {
     font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 2px;
     text-transform: uppercase; background: var(--red-dark); color: #fff;
     border-radius: 4px; padding: 3px 8px;
   }
 
-  /* ── Auth gate ── */
-  #authGate {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 70vh; gap: 16px; text-align: center;
-  }
-  #authGate p { color: var(--muted); font-size: 15px; }
-  .btn-signin {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; letter-spacing: 2px;
-    text-transform: uppercase; background: var(--red); color: #fff;
-    border: none; border-radius: 6px; padding: 10px 24px; cursor: pointer;
-    transition: background 0.15s;
-  }
-  .btn-signin:hover { background: var(--red-dark); }
 
   /* ── Main container ── */
   #adminUI { display: none; }
@@ -259,15 +239,9 @@
   <div class="header-right">
     <span class="admin-badge">Admin</span>
     <a class="back-link" href="/">← Back to Report</a>
-    <div id="clerkUserBtn"></div>
+    <a class="back-link" href="/cdn-cgi/access/logout">Sign Out</a>
   </div>
 </header>
-
-<!-- Auth gate -->
-<div id="authGate" style="display:none">
-  <p>Sign in to access the admin panel.</p>
-  <button class="btn-signin" id="signInBtn">Sign In</button>
-</div>
 
 <!-- Admin UI -->
 <div id="adminUI">
@@ -484,36 +458,20 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const ADMIN_USER_ID = 'user_3AdbnJCmquM3NDsW2glzfLxYvGB';
-
-// ── Clerk init ─────────────────────────────────────────────────────────────
-let clerk = null;
-let clerkToken = null; // cached token
-
-async function waitForClerk() {
-  return new Promise(resolve => {
-    if (window.Clerk) { resolve(window.Clerk); return; }
-    const iv = setInterval(() => {
-      if (window.Clerk) { clearInterval(iv); resolve(window.Clerk); }
-    }, 50);
-  });
-}
-
-async function getToken() {
-  if (!clerk || !clerk.session) return null;
-  return clerk.session.getToken();
-}
-
 // ── API helper ─────────────────────────────────────────────────────────────
+// Auth is Cloudflare Access: the CF_Authorization cookie rides along on
+// same-origin requests, so no token handling is needed here.
 async function adminFetch(path, opts = {}) {
-  const token = await getToken();
-  if (!token) throw new Error('Not authenticated');
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
     ...(opts.headers || {}),
   };
   const res = await fetch(`/api/admin${path}`, { ...opts, headers });
+  if (res.status === 401 || res.status === 403) {
+    // Access session expired — reload to bounce through the login flow
+    window.location.reload();
+    throw new Error('Session expired — reloading');
+  }
   const text = await res.text();
   if (!res.ok) {
     throw new Error(`${res.status}: ${text}`);
@@ -1065,28 +1023,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ── Main init ──────────────────────────────────────────────────────────────
-(async function init() {
-  clerk = await waitForClerk();
-  await clerk.load();
-
-  // Mount user button in header
-  clerk.mountUserButton(document.getElementById('clerkUserBtn'));
-
-  if (!clerk.user) {
-    document.getElementById('authGate').style.display = 'flex';
-    document.getElementById('signInBtn').addEventListener('click', () => clerk.openSignIn());
-    return;
-  }
-
-  if (clerk.user.id !== ADMIN_USER_ID) {
-    document.getElementById('authGate').style.display = 'flex';
-    document.getElementById('authGate').innerHTML =
-      `<p>You are signed in as <strong>${clerk.user.primaryEmailAddress?.emailAddress}</strong> but do not have admin access.</p>
-       <a class="back-link" href="/">← Back to Report</a>`;
-    return;
-  }
-
-  // Authorized — show admin UI
+// Cloudflare Access has already authenticated this request at the edge —
+// if this page is rendering, the user passed the admin policy.
+(function init() {
   document.getElementById('adminUI').style.display = 'block';
   loadPlayers();
 })();

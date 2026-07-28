@@ -79,14 +79,15 @@ Active players joined with their current-season salary. Computed columns:
 
 ## Admin Authentication
 
-This app uses **Clerk** for admin authentication (exception to the standard `VITE_ADMIN_JWT` pattern — plain HTML, no Vite build step). See `DEVLAB502-AUDIT-PROMPT-v2.md` for the full explanation.
+This app uses **Cloudflare Access (Zero Trust)** for admin authentication (migrated from Clerk, July 2026). Access gates `/admin.html` and `/api/admin/*` at the edge — unauthenticated requests never reach the Worker.
 
 - Public admin UI lives at `/admin.html`
-- Admin user ID hardcoded in both `worker.js` (`ADMIN_USER_ID`) and `public/admin.html`
-- Clerk publishable key: `pk_test_bGVhcm5pbmctZ3JvdXBlci0yNS5jbGVyay5hY2NvdW50cy5kZXYk` (dev mode — safe to commit)
-- JWKS URL: `https://learning-grouper-25.clerk.accounts.dev/.well-known/jwks.json`
-- Worker verifies Clerk JWT for all `/api/admin/*` requests, then forwards to PostgREST using `env.ADMIN_JWT` (Worker secret)
-- Admin nav link in `index.html` visible only to the configured admin user ID
+- Zero Trust team domain: `devlab502.cloudflareaccess.com`; Access app "Arsenal Report Admin" (AUD `fee3879731b63b8d1de61457c4c5c3143eaaab75ffb8554ff5ba9c0b37a03d36`)
+- Login: one-time PIN emailed to the allowed address (`sandersd@gmail.com`, set in the Access policy); sessions last 1 week
+- Defense in depth: the Worker re-verifies the `Cf-Access-Jwt-Assertion` JWT (issuer, AUD, expiry, email) on every `/api/admin/*` request before forwarding to PostgREST with `env.ADMIN_JWT` (Worker secret)
+- The browser sends no auth headers — the `CF_Authorization` cookie rides along on same-origin fetches
+- Sign out: `/cdn-cgi/access/logout`
+- Admin nav link in `index.html` is always visible; the page itself is behind Access
 
 ## Local Admin Server
 - Run: `npm run admin` → starts Express at localhost:3001, opens browser
