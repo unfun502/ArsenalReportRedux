@@ -93,7 +93,7 @@ This app uses **Cloudflare Access (Zero Trust)** for admin authentication (migra
 - Run: `npm run admin` → starts Express at localhost:3001, opens browser
 - Requires: `admin/.env` with `POSTGREST_URL` and `ADMIN_JWT`
 - Template: `admin/.env.example` (never commit `admin/.env`)
-- Generate JWT: `python scripts/generate-admin-jwt.py`
+- JWT: use the existing token in 1Password → Automation → "PostgREST arsenal_admin JWT" (expires 2027-10; also the Worker's `ADMIN_JWT`). Only mint a new one with `scripts/generate-admin-jwt.py` if `JWT_SECRET` is rotated, and add an `exp`.
 - Pages: Players list, Add/Edit player (all fields + salary history), Formation editor
 
 ## One-time Scripts
