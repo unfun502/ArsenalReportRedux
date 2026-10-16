@@ -8,6 +8,12 @@
       "port": 8787
     },
     {
+      "name": "worker",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/wrangler/bin/wrangler.js", "dev", "--port", "8791", "--ip", "127.0.0.1"],
+      "port": 8791
+    },
+    {
       "name": "admin",
       "runtimeExecutable": "node",
       "runtimeArgs": ["admin/server.js"],

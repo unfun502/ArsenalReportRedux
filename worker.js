@@ -1,8 +1,4 @@
-import { getAssetFromKV } from '@cloudflare/kv-asset-handler';
-import manifestJSON from '__STATIC_CONTENT_MANIFEST';
 import { runSquadSync } from './squad-sync.js';
-
-const assetManifest = JSON.parse(manifestJSON);
 
 const POSTGREST_BASE = 'https://api.devlab502.net/arsenal';
 
@@ -186,32 +182,13 @@ export default {
       return handlePublicProxy(url);
     }
 
-    // Static assets via Workers Sites (KV)
-    try {
-      const response = await getAssetFromKV(
-        { request, waitUntil: ctx.waitUntil.bind(ctx) },
-        { ASSET_NAMESPACE: env.__STATIC_CONTENT, ASSET_MANIFEST: assetManifest }
-      );
-      const headers = new Headers(response.headers);
-      for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-      return injectAnalytics(new Response(response.body, { status: response.status, headers }), env);
-    } catch {
-      try {
-        const fallback = await getAssetFromKV(
-          { request, waitUntil: ctx.waitUntil.bind(ctx) },
-          {
-            ASSET_NAMESPACE: env.__STATIC_CONTENT,
-            ASSET_MANIFEST: assetManifest,
-            mapRequestToAsset: req =>
-              new Request(`${new URL(req.url).origin}/index.html`, req),
-          }
-        );
-        const headers = new Headers(fallback.headers);
-        for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
-        return injectAnalytics(new Response(fallback.body, { status: 200, headers }), env);
-      } catch {
-        return new Response('Not Found', { status: 404 });
-      }
-    }
+    // Static assets via Workers Static Assets (binding ASSETS; not KV).
+    // Unknown paths get index.html with 200 from not_found_handling, as the
+    // old Workers Sites fallback did. Cache-Control is left as the asset layer
+    // sets it (the old handler set none).
+    const asset = await env.ASSETS.fetch(request);
+    const headers = new Headers(asset.headers);
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
+    return injectAnalytics(new Response(asset.body, { status: asset.status, headers }), env);
   },
 };

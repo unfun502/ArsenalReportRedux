@@ -15,7 +15,7 @@ Plain HTML/CSS/JS (single-file app), no build step, Cloudflare Workers
 arsenal-report.devlab502.net (custom domain on Workers)
 
 ## Build & Deploy
-- No build step — static HTML served by Worker via `@cloudflare/kv-asset-handler`
+- No build step — static files in `public/` served by the Worker via Workers Static Assets (`[assets]` in wrangler.toml, binding `ASSETS`; not legacy Workers Sites/KV). `html_handling = "none"` keeps `/admin.html` at the exact path Access gates
 - Deploys via GitHub Actions → `wrangler deploy` on push to main
 - Worker entry point: `worker.js`
 - Static files served from `public/` directory
